@@ -1,0 +1,9 @@
+*.X
+*.o
+*.vtk
+.cproject
+.project
+.ipynb_checkpoints/
+.settings/
+.vscode/
+temp
