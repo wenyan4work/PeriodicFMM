@@ -2,9 +2,9 @@
 The periodic wrapper and operator data generator to be used with PVFMM
 The algorithm is described in:
 
-Wen Yan & Michael Shelley, Flexibly imposing periodicity in kernel independent FMM: A Multipole-To-Local operator approach, 2017, arXiv 1705.02043
+Wen Yan & Michael Shelley, Flexibly imposing periodicity in kernel independent FMM: A Multipole-To-Local operator approach, Volume 355, 15 February 2018, Pages 214-232
 
-Now on arXiv: https://arxiv.org/abs/1705.02043, to be published in Journal of Computional Physics soon. Please cite if you find it useful.  
+Now published: https://doi.org/10.1016/j.jcp.2017.11.012 in Journal of Computional Physics. Please cite if you find it useful.  
 
 
 Dependency:
