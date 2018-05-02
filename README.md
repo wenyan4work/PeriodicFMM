@@ -8,7 +8,7 @@ Now published: https://doi.org/10.1016/j.jcp.2017.11.012 in Journal of Compution
 
 
 Dependency:
-The C++ template library Eigen is necessary to compile the files.
+The C++ template library Eigen is necessary to compile the test driver main.cpp. The wrapper class itself (FMMWrapper.h/.cpp) does not rely on Eigen.
 
 ## How-To:
 
