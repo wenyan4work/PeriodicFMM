@@ -14,29 +14,24 @@
 #ifndef STOKES3D3D_EWALD_HPP_
 #define STOKES3D3D_EWALD_HPP_
 
-#include "Eigen/Dense"
-#include"Ewald.hpp"
+#include <cmath>
 
-#include<cmath>
-#include "boost/math/special_functions/erf.hpp"
+#include <Eigen/Dense>
+#include <boost/math/special_functions/erf.hpp>
 
-#define DIRECTLAYER 2
-#define PI314 (3.1415926535897932384626433)
+constexpr int DIRECTLAYER = 2;
+constexpr double PI314 = 3.1415926535897932384626433;
 
-inline double ERFC(double x) {
-    return boost::math::erfc(x);
-}
+inline double ERFC(double x) { return boost::math::erfc(x); }
 
-inline double ERF(double x) {
-    return boost::math::erf(x);
-}
+inline double ERF(double x) { return boost::math::erf(x); }
 
 inline double boxperiodic(double x, double xlow, double xhigh) {
     double temp = (x - xlow) / (xhigh - xlow);
     return (x - xlow) - floor(temp) * (xhigh - xlow);
 }
 
-inline void Gkernel(const Eigen::Vector3d & target, const Eigen::Vector3d & source, Eigen::Matrix3d & answer) {
+inline void Gkernel(const Eigen::Vector3d &target, const Eigen::Vector3d &source, Eigen::Matrix3d &answer) {
     auto rst = target - source;
     double rnorm = rst.norm();
     double rnormReg = rnorm;
@@ -49,7 +44,7 @@ inline void Gkernel(const Eigen::Vector3d & target, const Eigen::Vector3d & sour
     answer = part1 + part2;
 }
 
-inline void Gkernel1D(const Eigen::Vector3d & target, Eigen::Matrix3d & G) {
+inline void Gkernel1D(const Eigen::Vector3d &target, Eigen::Matrix3d &G) {
     const int Nsum = 10000;
     G.setZero();
     Eigen::Matrix3d Gtemp1;
@@ -70,11 +65,11 @@ inline void Gkernel1D(const Eigen::Vector3d & target, Eigen::Matrix3d & G) {
  return A
  *
  * */
-inline Eigen::Matrix3d AEW(const double xi, const Eigen::Vector3d & rvec) {
+inline Eigen::Matrix3d AEW(const double xi, const Eigen::Vector3d &rvec) {
     const double r = rvec.norm();
-    Eigen::Matrix3d A = 2 * (xi * exp(-(xi * xi) * (r * r)) / (sqrt(PI314) * r * r) + erfc(xi * r) / (2 * r * r * r))
-            * (r * r * Eigen::Matrix3d::Identity() + (rvec * rvec.transpose()))
-            - 4 * xi / sqrt(PI314) * exp(-(xi * xi) * (r * r)) * Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d A = 2 * (xi * exp(-(xi * xi) * (r * r)) / (sqrt(PI314) * r * r) + erfc(xi * r) / (2 * r * r * r)) *
+                            (r * r * Eigen::Matrix3d::Identity() + (rvec * rvec.transpose())) -
+                        4 * xi / sqrt(PI314) * exp(-(xi * xi) * (r * r)) * Eigen::Matrix3d::Identity();
     return A;
 }
 
@@ -86,10 +81,10 @@ inline Eigen::Matrix3d AEW(const double xi, const Eigen::Vector3d & rvec) {
  return B*np.exp(-k**2/(4*xi**2))
  *
  * */
-inline Eigen::Matrix3d BEW(const double xi, const Eigen::Vector3d & kvec) {
+inline Eigen::Matrix3d BEW(const double xi, const Eigen::Vector3d &kvec) {
     const double k = kvec.norm();
-    Eigen::Matrix3d B = 8 * PI314 * (1 + k * k / (4 * (xi * xi)))
-            * ((k * k) * Eigen::Matrix3d::Identity() - (kvec * kvec.transpose())) / (k * k * k * k);
+    Eigen::Matrix3d B = 8 * PI314 * (1 + k * k / (4 * (xi * xi))) *
+                        ((k * k) * Eigen::Matrix3d::Identity() - (kvec * kvec.transpose())) / (k * k * k * k);
     B *= exp(-k * k / (4 * xi * xi));
     return B;
 }
@@ -118,7 +113,7 @@ inline Eigen::Matrix3d BEW(const double xi, const Eigen::Vector3d & kvec) {
  return (np.real(wave)+real)
 
  * */
-inline void GkernelEwald3D(const Eigen::Vector3d & rvecIn, Eigen::Matrix3d & Gsum, double box) {
+inline void GkernelEwald3D(const Eigen::Vector3d &rvecIn, Eigen::Matrix3d &Gsum, double box) {
     const double xi = 2;
     Eigen::Vector3d rvec = rvecIn;
     rvec[0] = rvec[0] - floor(rvec[0]);
@@ -179,7 +174,7 @@ inline void GkernelEwald3D(const Eigen::Vector3d & rvecIn, Eigen::Matrix3d & Gsu
  return uEwald-uNB
  * */
 // Out of Layer 1
-inline void GkernelEwald3DFF(const Eigen::Vector3d & rvec, Eigen::Matrix3d & GsumO1) {
+inline void GkernelEwald3DFF(const Eigen::Vector3d &rvec, Eigen::Matrix3d &GsumO1) {
     Eigen::Matrix3d Gfree = Eigen::Matrix3d::Zero();
     GkernelEwald3D(rvec, GsumO1, 1.0);
     const int N = DIRECTLAYER;
@@ -193,32 +188,23 @@ inline void GkernelEwald3DFF(const Eigen::Vector3d & rvec, Eigen::Matrix3d & Gsu
     }
 }
 
-inline double lbda(double k, double xi, double z) {
-    return exp(-k * k / (4 * xi * xi) - (xi * xi) * (z * z));
-}
+inline double lbda(double k, double xi, double z) { return exp(-k * k / (4 * xi * xi) - (xi * xi) * (z * z)); }
 
-inline double thetaplus(double k, double xi, double z) {
-    return exp(k * z) * ERFC(k / (2 * xi) + xi * z);
-}
+inline double thetaplus(double k, double xi, double z) { return exp(k * z) * ERFC(k / (2 * xi) + xi * z); }
 
-inline double thetaminus(double k, double xi, double z) {
-    return exp(-k * z) * ERFC(k / (2 * xi) - xi * z);
-}
+inline double thetaminus(double k, double xi, double z) { return exp(-k * z) * ERFC(k / (2 * xi) - xi * z); }
 
-inline double J00(double k, double xi, double z) {
-    return sqrt(PI314) * lbda(k, xi, z) * xi;
-}
+inline double J00(double k, double xi, double z) { return sqrt(PI314) * lbda(k, xi, z) * xi; }
 
 inline double J10(double k, double xi, double z) {
     return PI314 * (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (4 * k);
 }
 
 inline double J20(double k, double xi, double z) {
-    return sqrt(PI314) * lbda(k, xi, z) / (4 * k * k * xi)
-            + PI314
-                    * ((thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (8 * k * k * k)
-                            + (thetaminus(k, xi, z) - thetaplus(k, xi, z)) * z / (8 * k * k)
-                            - (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (16 * k * (xi * xi)));
+    return sqrt(PI314) * lbda(k, xi, z) / (4 * k * k * xi) +
+           PI314 * ((thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (8 * k * k * k) +
+                    (thetaminus(k, xi, z) - thetaplus(k, xi, z)) * z / (8 * k * k) -
+                    (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (16 * k * (xi * xi)));
 }
 
 inline double J12(double k, double xi, double z) {
@@ -226,30 +212,27 @@ inline double J12(double k, double xi, double z) {
 }
 
 inline double J22(double k, double xi, double z) {
-    return PI314
-            * ((thetaplus(k, xi, z) + thetaminus(k, xi, z)) * k / (16 * xi * xi)
-                    + (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (8 * k)
-                    + (thetaplus(k, xi, z) - thetaminus(k, xi, z)) * z / 8) - sqrt(PI314) * lbda(k, xi, z) / (4 * xi);
+    return PI314 * ((thetaplus(k, xi, z) + thetaminus(k, xi, z)) * k / (16 * xi * xi) +
+                    (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (8 * k) +
+                    (thetaplus(k, xi, z) - thetaminus(k, xi, z)) * z / 8) -
+           sqrt(PI314) * lbda(k, xi, z) / (4 * xi);
 }
 
-inline double K11(double k, double xi, double z) {
-    return PI314 * ((thetaminus(k, xi, z) - thetaplus(k, xi, z))) / 4;
-}
+inline double K11(double k, double xi, double z) { return PI314 * ((thetaminus(k, xi, z) - thetaplus(k, xi, z))) / 4; }
 
 inline double K12(double k, double xi, double z) {
-    return PI314
-            * ((thetaplus(k, xi, z) - thetaminus(k, xi, z)) / (16 * xi * xi)
-                    + (thetaminus(k, xi, z) + thetaplus(k, xi, z)) * z / (8 * k));
+    return PI314 * ((thetaplus(k, xi, z) - thetaminus(k, xi, z)) / (16 * xi * xi) +
+                    (thetaminus(k, xi, z) + thetaplus(k, xi, z)) * z / (8 * k));
 }
 
-inline void QI(const Eigen::Vector3d & kvec, double xi, double z, Eigen::Matrix3d & QI) {
+inline void QI(const Eigen::Vector3d &kvec, double xi, double z, Eigen::Matrix3d &QI) {
     // 3*3 tensor
     // kvec: np.array([k1,k2,0])
     double knorm = sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1]);
     QI = 2 * (J00(knorm, xi, z) / (4 * xi * xi) + J10(knorm, xi, z)) * Eigen::Matrix3d::Identity();
 }
 
-inline void Qkk(const Eigen::Vector3d & kvec, double xi, double z, Eigen::Matrix3d & Qreal, Eigen::Matrix3d & Qimg) {
+inline void Qkk(const Eigen::Vector3d &kvec, double xi, double z, Eigen::Matrix3d &Qreal, Eigen::Matrix3d &Qimg) {
     double k1 = kvec[0];
     double k2 = kvec[1];
     double knorm = sqrt(k1 * k1 + k2 * k2);
@@ -275,19 +258,19 @@ inline void Qkk(const Eigen::Vector3d & kvec, double xi, double z, Eigen::Matrix
     Qimg(1, 2) = k2;
     Qimg(2, 0) = k1;
     Qimg(2, 1) = k2;
-//Qimg=np.array([[0,0,k1],[0,0,k2],[k1,k2,0]])*( k11/(4*xi**2) + k12 )
+    // Qimg=np.array([[0,0,k1],[0,0,k2],[k1,k2,0]])*( k11/(4*xi**2) + k12 )
     Qimg *= (k11 / (4 * xi * xi) + k12);
     Qimg *= -2;
 }
 
-//inline Eigen::Matrix3d uFk0(double xi, double zmn) {
+// inline Eigen::Matrix3d uFk0(double xi, double zmn) {
 //	Eigen::Matrix3d wavek0;
 //	wavek0 = -(4.0 / 1) * (PI314 * (zmn) * ERF(zmn * xi) + sqrt(PI314) / (2 * xi) * exp(-zmn * zmn * xi * xi));
 //	return wavek0;
 //
 //}
 
-inline void GkernelEwald2D(const Eigen::Vector3d & rvecIn, Eigen::Matrix3d & Gsum) {
+inline void GkernelEwald2D(const Eigen::Vector3d &rvecIn, Eigen::Matrix3d &Gsum) {
     const double xi = 2;
     Eigen::Vector3d rvec = rvecIn;
     rvec[0] = rvec[0] - floor(rvec[0]);
@@ -332,8 +315,7 @@ inline void GkernelEwald2D(const Eigen::Vector3d & rvecIn, Eigen::Matrix3d & Gsu
             }
             Qkk(kvec, xi, zmn, Qreal, Qimg);
             QI(kvec, xi, zmn, QImat);
-            wave = wave + (QImat + Qreal) * cos(kvec.dot(rhomn)) - (Qimg) * sin(kvec.dot(rhomn));
-
+            wave = wave + (QImat + Qreal) * cos(kvec.dot(rhomn)) - (Qimg)*sin(kvec.dot(rhomn));
         }
     }
     wave *= 4;
@@ -347,8 +329,8 @@ inline void GkernelEwald2D(const Eigen::Vector3d & rvecIn, Eigen::Matrix3d & Gsu
      wavek0=-(4/1)*(np.pi*(zmn)*ss.erf(zmn*xi)+np.sqrt(np.pi)/(2*xi)*np.exp(-zmn**2*xi**2))*I2fn
      *
      * */
-    waveK0 = -(4 / 1.0) * (PI314 * (zmn) * ERF(zmn * xi) + sqrt(PI314) / (2 * xi) * exp(-zmn * zmn * xi * xi))
-            * Eigen::Matrix3d::Identity();
+    waveK0 = -(4 / 1.0) * (PI314 * (zmn)*ERF(zmn * xi) + sqrt(PI314) / (2 * xi) * exp(-zmn * zmn * xi * xi)) *
+             Eigen::Matrix3d::Identity();
     waveK0(2, 2) = 0;
 
     Gsum = real + wave + waveK0;

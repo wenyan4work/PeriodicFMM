@@ -1,7 +1,7 @@
 # change this to match your system
-SFTPATH=/Users/wyan/local
+SFTPATH=/mnt/home/wyan/local
 EIGEN= $(SFTPATH)/include/eigen3
-CXX= mpicxx -Wa,-q
+CXX= mpicxx
 LINK = $(CXX)
 
 EIGEN= $(SFTPATH)/include/eigen3
