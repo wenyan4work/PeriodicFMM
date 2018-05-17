@@ -1,11 +1,17 @@
 # PeriodicFMM
 The periodic wrapper and operator data generator to be used with PVFMM
-The algorithm is described in:
 
-Wen Yan & Michael Shelley, Flexibly imposing periodicity in kernel independent FMM: A Multipole-To-Local operator approach, Volume 355, 15 February 2018, Pages 214-232
+The flexibly periodic KIFMM algorithm is described in:
 
-Now published: https://doi.org/10.1016/j.jcp.2017.11.012 in Journal of Computional Physics. Please cite if you find it useful.  
+Wen Yan & Michael Shelley, Flexibly imposing periodicity in kernel independent FMM: A Multipole-To-Local operator approach
+Journal of Computional Physics, Volume 355, 2018, Pages 214-232, https://doi.org/10.1016/j.jcp.2017.11.012. 
 
+The flexibly periodic Stokeslet Image algorithm is described in:
+
+Wen Yan & Michael Shelley, Universal image systems for non-periodic and periodic Stokes flows above a no-slip wall
+arXiv:1803.02424
+
+Please cite them if you find it useful.  
 
 Dependency:
 The C++ template library Eigen is necessary to compile the test driver main.cpp. The wrapper class itself (FMMWrapper.h/.cpp) does not rely on Eigen.
@@ -21,7 +27,7 @@ After compilation, type:
 ```bash
 XXX.X p > ./M2LYYYaD3Dpb
 ```
-where XXX.X is the name of the executable, YYY is the name of the kernel (Stokes, LaplaceCharge, LaplaceDipole, etc), p is the discretization number for KIFMM, a is periodic dimension, and b is the point number for the equiv surface. For exmaple, M2L2D3Dp8 means doubly periodic in 3D space with p=8. See FMMWrapper.cpp for details.
+where XXX.X is the name of the executable, YYY is the name of the kernel (Stokes, LaplaceCharge, LaplaceDipole, etc), p is the discretization number for KIFMM, 'a' is periodic dimension, and 'b' is the point number for the equiv surface. 'b' controls the tradeoff between accuracy and cost. 'b=10' gives single precision and 'p=16' gives double precision, roughly. For exmaple, M2L2D3Dp8 means doubly periodic in 3D space with p=8. See FMMWrapper.cpp for details.
 
 For example
 ```bash
@@ -68,12 +74,40 @@ localhost:pvfmm wyan$ ls ./pdata/M2LStokes*
 ./pdata/M2LStokes1D3Dp8  ./pdata/M2LStokes2D3Dp8  ./pdata/M2LStokes3D3Dp8
 ```
 
-Modify the Makefile properly, and then type:
+The wrapper files are located in the folder 'FMM':
 ```bash
-make
-./StokesTest3D3D.X --help
+PeriodicFMM/ $ ls ./FMM
+FMMWrapper.cpp  FMMWrapper.h  FMMWrapper.o  FMMWrapperWall2D.cpp  FMMWrapperWall2D.h  LaplaceCustomKernel.hpp
+PeriodicFMM/ $ 
 ```
-to get command line options. This test driver demonstrates how to use the wrapper FMM class and can perform tests for FreeSpace, SP, DP, TP in 3D space, for random & chebyshev points, with OpenMP & MPI.
+
+The test-driving routines are located in the folder 'ModuleTest'
+```bash
+PeriodicFMM/ $ ls ./ModuleTest/
+StokesFMM3D  StokesFMMWall2D  MakefileInc.mk
+PeriodicFMM/ $ 
+```
+Modify the file MakefileInc.mk properly.
+
+To run the demo and tests for Stokes 3D periodic FMM:
+```bash
+PeriodicFMM/ $ cd ModuleTest/StokesFMM3D/
+StokesFMM3D/ $ make
+make: 'TestStokes3D.X' is up to date.
+StokesFMM3D/ $ TestStokes3D.X --help
+```
+to get command line options. 
+
+To run the demo and tests for Stokes 3D periodic FMM above a wall:
+```bash
+PeriodicFMM/ $ cd ModuleTest/StokesFMMWall2D/
+StokesFMMWall2D/ $ make
+make: 'TestStokesWall2D.X' is up to date.
+StokesFMMWall2D/ $ ./TestStokesWall2D.X --help
+```
+to get command line options. 
+
+This test driver demonstrates how to use the wrapper FMM class and can perform tests for FreeSpace, SP, DP, TP in 3D space, for random & chebyshev points, with OpenMP & MPI.
 
 # Warning
 This wrapper only works with the new_BC branch of my fork of PVFMM.

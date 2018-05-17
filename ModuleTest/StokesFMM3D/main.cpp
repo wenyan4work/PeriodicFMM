@@ -6,19 +6,17 @@
  */
 
 #include "ChebNodal.h"
-#include "FMMWrapper.h"
 #include "Ewald.hpp"
-
-#include "../common/cmdparser.hpp"
+#include "FMM/FMMWrapper.h"
+#include "Util/cmdparser.hpp"
 
 #include <chrono>
 #include <iostream>
+#include <mpi.h>
 #include <random>
 #include <vector>
 
 #include <Eigen/Dense>
-#include <mpi.h>
-
 
 void distributePts(std::vector<double> &pts) {
     int myRank;
@@ -95,7 +93,7 @@ void collectPts(std::vector<double> &pts) {
     // std::cout << "globalSize " << ptsGlobalSize << std::endl;
     if (myRank == 0) {
         MPI_Gatherv(pts.data(), pts.size(), MPI_DOUBLE, ptsRecv.data(), recvSize.data(), displs.data(), MPI_DOUBLE, 0,
-        MPI_COMM_WORLD);
+                    MPI_COMM_WORLD);
     } else {
         MPI_Gatherv(pts.data(), pts.size(), MPI_DOUBLE, NULL, NULL, NULL, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     }
@@ -104,9 +102,8 @@ void collectPts(std::vector<double> &pts) {
 }
 
 class Trapz { // map from (-1,1)
-public:
-    Trapz(int N_) :
-            N(N_) {
+  public:
+    Trapz(int N_) : N(N_) {
         points.resize(N_ + 1);
         weights.resize(N_ + 1);
 
@@ -123,8 +120,8 @@ public:
 };
 
 void calcTrueValueFMM(std::vector<double> &trg_value_true, const std::vector<double> &trg_coord,
-        std::vector<double> &src_value, const std::vector<double> &src_coord, const double box, const double shift,
-        const FMM_Wrapper::PAXIS pset) {
+                      std::vector<double> &src_value, const std::vector<double> &src_coord, const double box,
+                      const double shift, const FMM_Wrapper::PAXIS pset) {
     std::cout << "***************************************************" << std::endl;
     std::cout << "Skip O(N^2) true value calculation for large system" << std::endl;
     std::cout << "Use FMM p=16 as 'true' value                       " << std::endl;
@@ -137,8 +134,8 @@ void calcTrueValueFMM(std::vector<double> &trg_value_true, const std::vector<dou
 }
 
 void calcTrueValueN2(std::vector<double> &trg_value_true, const std::vector<double> &trg_coord,
-        std::vector<double> &src_value, const std::vector<double> &src_coord, const double box, const double shift,
-        const FMM_Wrapper::PAXIS pset) {
+                     std::vector<double> &src_value, const std::vector<double> &src_coord, const double box,
+                     const double shift, const FMM_Wrapper::PAXIS pset) {
 
     // calc Ewald accuracy test
     trg_value_true.resize(trg_coord.size());
@@ -195,11 +192,11 @@ void calcTrueValueN2(std::vector<double> &trg_value_true, const std::vector<doub
             Eigen::Matrix3d G;
             if (pset == FMM_Wrapper::PAXIS::PXYZ) {
                 GkernelEwald3D(rst, G, 1.0);
-            } else if (pset == FMM_Wrapper::PAXIS::PXY || pset == FMM_Wrapper::PAXIS::PXZ
-                    || pset == FMM_Wrapper::PAXIS::PYZ) {
+            } else if (pset == FMM_Wrapper::PAXIS::PXY || pset == FMM_Wrapper::PAXIS::PXZ ||
+                       pset == FMM_Wrapper::PAXIS::PYZ) {
                 GkernelEwald2D(rst, G); // default box = 1
-            } else if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PY
-                    || pset == FMM_Wrapper::PAXIS::PZ) {
+            } else if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PY ||
+                       pset == FMM_Wrapper::PAXIS::PZ) {
                 Gkernel1D(rst, G); // default box =1
             } else if (pset == FMM_Wrapper::PAXIS::NONE) {
                 Gkernel(rst, Eigen::Vector3d(0, 0, 0), G);
@@ -230,7 +227,7 @@ void calcTrueValueN2(std::vector<double> &trg_value_true, const std::vector<doub
 }
 
 void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std::vector<double> &trg_coord,
-        std::vector<double> &trg_value, const cli::Parser &parser) {
+             std::vector<double> &trg_value, const cli::Parser &parser) {
 
     // initialize source and target coord and value
     bool randomS = (parser.get<int>("R") > 0 ? true : false);
@@ -241,30 +238,30 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
     FMM_Wrapper::PAXIS pset;
     int pinput = parser.get<int>("P");
     switch (pinput) {
-        case 0:
-            pset = FMM_Wrapper::PAXIS::NONE;
-            break;
-        case 1:
-            pset = FMM_Wrapper::PAXIS::PX;
-            break;
-        case 2:
-            pset = FMM_Wrapper::PAXIS::PY;
-            break;
-        case 3:
-            pset = FMM_Wrapper::PAXIS::PZ;
-            break;
-        case 4:
-            pset = FMM_Wrapper::PAXIS::PXY;
-            break;
-        case 5:
-            pset = FMM_Wrapper::PAXIS::PXZ;
-            break;
-        case 6:
-            pset = FMM_Wrapper::PAXIS::PYZ;
-            break;
-        case 7:
-            pset = FMM_Wrapper::PAXIS::PXYZ;
-            break;
+    case 0:
+        pset = FMM_Wrapper::PAXIS::NONE;
+        break;
+    case 1:
+        pset = FMM_Wrapper::PAXIS::PX;
+        break;
+    case 2:
+        pset = FMM_Wrapper::PAXIS::PY;
+        break;
+    case 3:
+        pset = FMM_Wrapper::PAXIS::PZ;
+        break;
+    case 4:
+        pset = FMM_Wrapper::PAXIS::PXY;
+        break;
+    case 5:
+        pset = FMM_Wrapper::PAXIS::PXZ;
+        break;
+    case 6:
+        pset = FMM_Wrapper::PAXIS::PYZ;
+        break;
+    case 7:
+        pset = FMM_Wrapper::PAXIS::PXYZ;
+        break;
     }
 
     const int chebN = ntrgEdge;
@@ -318,16 +315,19 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
         for (int i = 0; i < dimension; i++) {
             for (int j = 0; j < dimension; j++) {
                 for (int k = 0; k < dimension; k++) {
-                    chebMesh[3 * (i * dimension * dimension + j * dimension + k)] = (chebData.points[i] + 1) * box / 2
-                            + shift;
-                    chebMesh[3 * (i * dimension * dimension + j * dimension + k) + 1] = (chebData.points[j] + 1) * box
-                            / 2 + shift;
-                    chebMesh[3 * (i * dimension * dimension + j * dimension + k) + 2] = (chebData.points[k] + 1) * box
-                            / 2 + shift;
+                    chebMesh[3 * (i * dimension * dimension + j * dimension + k)] =
+                        (chebData.points[i] + 1) * box / 2 + shift;
+                    chebMesh[3 * (i * dimension * dimension + j * dimension + k) + 1] =
+                        (chebData.points[j] + 1) * box / 2 + shift;
+                    chebMesh[3 * (i * dimension * dimension + j * dimension + k) + 2] =
+                        (chebData.points[k] + 1) * box / 2 + shift;
 
-                    chebValue[3 * (i * dimension * dimension + j * dimension + k)] = (drand48() - 0.5); // RNG on [-0.5,0.5]
-                    chebValue[3 * (i * dimension * dimension + j * dimension + k) + 1] = (drand48() - 0.5); // RNG on [-0.5,0.5]
-                    chebValue[3 * (i * dimension * dimension + j * dimension + k) + 2] = (drand48() - 0.5); // RNG on [-0.5,0.5]
+                    chebValue[3 * (i * dimension * dimension + j * dimension + k)] =
+                        (drand48() - 0.5); // RNG on [-0.5,0.5]
+                    chebValue[3 * (i * dimension * dimension + j * dimension + k) + 1] =
+                        (drand48() - 0.5); // RNG on [-0.5,0.5]
+                    chebValue[3 * (i * dimension * dimension + j * dimension + k) + 2] =
+                        (drand48() - 0.5); // RNG on [-0.5,0.5]
                 }
             }
         }
@@ -341,86 +341,82 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
     // initialize source points
     int nsource = parser.get<int>("S");
     switch (nsource) {
-        case 1: {
-            src_coord.push_back(0.7 * box + shift);
-            src_coord.push_back(0.6 * box + shift);
-            src_coord.push_back(0.4 * box + shift);
-            src_value.push_back(1.0 / sqrt(14.0));
-            src_value.push_back(2.0 / sqrt(14.0));
-            src_value.push_back(3.0 / sqrt(14.0));
-            for (auto &s : src_coord) {
-                std::cout << "src_coord" << s << std::endl;
-            }
-            for (auto &s : src_value) {
-                std::cout << "src_value" << s << std::endl;
-            }
+    case 1: {
+        src_coord.push_back(0.7 * box + shift);
+        src_coord.push_back(0.6 * box + shift);
+        src_coord.push_back(0.4 * box + shift);
+        src_value.push_back(1.0 / sqrt(14.0));
+        src_value.push_back(2.0 / sqrt(14.0));
+        src_value.push_back(3.0 / sqrt(14.0));
+        for (auto &s : src_coord) {
+            std::cout << "src_coord" << s << std::endl;
         }
-            break;
-        case 2: {
-            src_coord.push_back(0.7 * box + shift); // 1
-            src_coord.push_back(0.6 * box + shift);
-            src_coord.push_back(0.5 * box + shift);
-            src_coord.push_back(0.2 * box + shift); // 2
-            src_coord.push_back(0.8 * box + shift);
-            src_coord.push_back(0.7 * box + shift);
-            src_value.push_back(1 / sqrt(14.0));
-            src_value.push_back(2 / sqrt(14.0));
-            src_value.push_back(3 / sqrt(14.0));
-            src_value.push_back(-src_value[0]);
-            src_value.push_back(-src_value[1]);
-            src_value.push_back(-src_value[2]);
-            for (auto &s : src_coord) {
-                std::cout << "src_coord" << s << std::endl;
-            }
-            for (auto &s : src_value) {
-                std::cout << "src_value" << s << std::endl;
-            }
+        for (auto &s : src_value) {
+            std::cout << "src_value" << s << std::endl;
         }
-            break;
-        case 4: {                                   // quadrupole, no dipole
-            src_coord.push_back(0.1 * box + shift); // 1
-            src_coord.push_back(0.1 * box + shift);
-            src_coord.push_back(0.1 * box + shift);
-            src_coord.push_back(0.2 * box + shift); // 2
-            src_coord.push_back(0.2 * box + shift);
-            src_coord.push_back(0.2 * box + shift);
-            src_coord.push_back(0.3 * box + shift); // 3
-            src_coord.push_back(0.3 * box + shift);
-            src_coord.push_back(0.3 * box + shift);
-            src_coord.push_back(0.4 * box + shift); // 4
-            src_coord.push_back(0.4 * box + shift);
-            src_coord.push_back(0.4 * box + shift);
-            const double f = 1 / sqrt(3);
-            src_value.push_back(f); // 1
-            src_value.push_back(f);
-            src_value.push_back(f);
-            src_value.push_back(-f); // 2
-            src_value.push_back(-f);
-            src_value.push_back(-f);
-            src_value.push_back(-f); // 2
-            src_value.push_back(-f);
-            src_value.push_back(-f);
-            src_value.push_back(f); // 4
-            src_value.push_back(f);
-            src_value.push_back(f);
-            for (auto &s : src_coord) {
-                std::cout << "src_coord" << s << std::endl;
-            }
-            for (auto &s : src_value) {
-                std::cout << "src_value" << s << std::endl;
-            }
+    } break;
+    case 2: {
+        src_coord.push_back(0.7 * box + shift); // 1
+        src_coord.push_back(0.6 * box + shift);
+        src_coord.push_back(0.5 * box + shift);
+        src_coord.push_back(0.2 * box + shift); // 2
+        src_coord.push_back(0.8 * box + shift);
+        src_coord.push_back(0.7 * box + shift);
+        src_value.push_back(1 / sqrt(14.0));
+        src_value.push_back(2 / sqrt(14.0));
+        src_value.push_back(3 / sqrt(14.0));
+        src_value.push_back(-src_value[0]);
+        src_value.push_back(-src_value[1]);
+        src_value.push_back(-src_value[2]);
+        for (auto &s : src_coord) {
+            std::cout << "src_coord" << s << std::endl;
         }
-            break;
+        for (auto &s : src_value) {
+            std::cout << "src_value" << s << std::endl;
+        }
+    } break;
+    case 4: {                                   // quadrupole, no dipole
+        src_coord.push_back(0.1 * box + shift); // 1
+        src_coord.push_back(0.1 * box + shift);
+        src_coord.push_back(0.1 * box + shift);
+        src_coord.push_back(0.2 * box + shift); // 2
+        src_coord.push_back(0.2 * box + shift);
+        src_coord.push_back(0.2 * box + shift);
+        src_coord.push_back(0.3 * box + shift); // 3
+        src_coord.push_back(0.3 * box + shift);
+        src_coord.push_back(0.3 * box + shift);
+        src_coord.push_back(0.4 * box + shift); // 4
+        src_coord.push_back(0.4 * box + shift);
+        src_coord.push_back(0.4 * box + shift);
+        const double f = 1 / sqrt(3);
+        src_value.push_back(f); // 1
+        src_value.push_back(f);
+        src_value.push_back(f);
+        src_value.push_back(-f); // 2
+        src_value.push_back(-f);
+        src_value.push_back(-f);
+        src_value.push_back(-f); // 2
+        src_value.push_back(-f);
+        src_value.push_back(-f);
+        src_value.push_back(f); // 4
+        src_value.push_back(f);
+        src_value.push_back(f);
+        for (auto &s : src_coord) {
+            std::cout << "src_coord" << s << std::endl;
+        }
+        for (auto &s : src_value) {
+            std::cout << "src_value" << s << std::endl;
+        }
+    } break;
 
-        default: {
-            src_coord = trg_coord;
-            src_value = trg_value;
-        }
-            break;
+    default: {
+        src_coord = trg_coord;
+        src_value = trg_value;
+    } break;
     }
     // enforce net charge for 1P and 2P
-    if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PY || pset == FMM_Wrapper::PAXIS::PZ
-            || pset == FMM_Wrapper::PAXIS::PXY || pset == FMM_Wrapper::PAXIS::PYZ || pset == FMM_Wrapper::PAXIS::PXZ) {
+    if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PY || pset == FMM_Wrapper::PAXIS::PZ ||
+        pset == FMM_Wrapper::PAXIS::PXY || pset == FMM_Wrapper::PAXIS::PYZ || pset == FMM_Wrapper::PAXIS::PXZ) {
         double fx = 0, fy = 0, fz = 0;
         assert(src_coord.size() == src_value.size());
         for (int i = 0; i < src_coord.size() / 3; i++) {
@@ -442,16 +438,16 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
 }
 
 void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std::vector<double> &src_value,
-        std::vector<double> &src_coord, std::vector<double> &trg_value_true, int p, double box, double shift,
-        FMM_Wrapper::PAXIS pset) {
+             std::vector<double> &src_coord, std::vector<double> &trg_value_true, int p, double box, double shift,
+             FMM_Wrapper::PAXIS pset) {
     int myRank;
     int nProcs;
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     MPI_Comm_size(MPI_COMM_WORLD, &nProcs);
     if (myRank == 0) {
         std::cout << "------------------------------" << std::endl;
-        std::cout << "FMM Initializing for order p:" << p << " src points: " << src_coord.size() / 3 << " trg points: "
-                << trg_coord.size() / 3 << std::endl;
+        std::cout << "FMM Initializing for order p:" << p << " src points: " << src_coord.size() / 3
+                  << " trg points: " << trg_coord.size() / 3 << std::endl;
         std::cout << "MPI Procs: " << nProcs << std::endl;
         std::cout << "omp threads: " << omp_get_max_threads() << std::endl;
     }
@@ -514,13 +510,13 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std
 
 void configure_parser(cli::Parser &parser) {
     parser.set_optional<int>("P", "periodicity", 0,
-            "0: NONE. 1: PX. 2:PY. 3:PZ. 4:PXY. 5:PXZ. 6:PYZ. 7:PXYZ. Default 0");
+                             "0: NONE. 1: PX. 2:PY. 3:PZ. 4:PXY. 5:PXZ. 6:PYZ. 7:PXYZ. Default 0");
     parser.set_optional<int>("T", "ntarget", 2, "target number in each dimension. default 2");
     parser.set_optional<double>("B", "box", 1.0, "box edge length");
     parser.set_optional<double>("M", "move", 0.0, "box origin shift move");
     parser.set_optional<int>("R", "random", 1, "1 for random points, 0 for regular mesh");
     parser.set_optional<int>("S", "source", 1,
-            "1 for point force, 2 for force dipole, 4 for quadrupole, other for same as target.");
+                             "1 for point force, 2 for force dipole, 4 for quadrupole, other for same as target.");
 }
 
 int main(int argc, char **argv) {
@@ -543,30 +539,30 @@ int main(int argc, char **argv) {
     FMM_Wrapper::PAXIS pset;
     int pinput = parser.get<int>("P");
     switch (pinput) {
-        case 0:
-            pset = FMM_Wrapper::PAXIS::NONE;
-            break;
-        case 1:
-            pset = FMM_Wrapper::PAXIS::PX;
-            break;
-        case 2:
-            pset = FMM_Wrapper::PAXIS::PY;
-            break;
-        case 3:
-            pset = FMM_Wrapper::PAXIS::PZ;
-            break;
-        case 4:
-            pset = FMM_Wrapper::PAXIS::PXY;
-            break;
-        case 5:
-            pset = FMM_Wrapper::PAXIS::PXZ;
-            break;
-        case 6:
-            pset = FMM_Wrapper::PAXIS::PYZ;
-            break;
-        case 7:
-            pset = FMM_Wrapper::PAXIS::PXYZ;
-            break;
+    case 0:
+        pset = FMM_Wrapper::PAXIS::NONE;
+        break;
+    case 1:
+        pset = FMM_Wrapper::PAXIS::PX;
+        break;
+    case 2:
+        pset = FMM_Wrapper::PAXIS::PY;
+        break;
+    case 3:
+        pset = FMM_Wrapper::PAXIS::PZ;
+        break;
+    case 4:
+        pset = FMM_Wrapper::PAXIS::PXY;
+        break;
+    case 5:
+        pset = FMM_Wrapper::PAXIS::PXZ;
+        break;
+    case 6:
+        pset = FMM_Wrapper::PAXIS::PYZ;
+        break;
+    case 7:
+        pset = FMM_Wrapper::PAXIS::PXYZ;
+        break;
     }
 
     const double box = parser.get<double>("B");
@@ -637,12 +633,12 @@ int main(int argc, char **argv) {
             for (int i = 0; i < imax; i++) {
                 for (int j = 0; j < jmax; j++) {
                     for (int k = 0; k < kmax; k++) {
-                        double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)]
-                                * chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                        double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1]
-                                * chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                        double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2]
-                                * chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                        double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)] *
+                                     chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                        double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1] *
+                                     chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                        double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2] *
+                                     chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
                         vx += vxp;
                         vy += vyp;
                         vz += vzp;
@@ -650,7 +646,7 @@ int main(int argc, char **argv) {
                 }
             }
             std::cout << "net flow: " << vx / chebData.weights[0] << "," << vy / chebData.weights[0] << ","
-                    << vz / chebData.weights[0] << std::endl;
+                      << vz / chebData.weights[0] << std::endl;
 
             // two other fluxes for 3P
             if (pset == FMM_Wrapper::PAXIS::PXYZ) {
@@ -661,12 +657,12 @@ int main(int argc, char **argv) {
                 for (int i = 0; i < imax; i++) {
                     for (int j = 0; j < jmax; j++) {
                         for (int k = 0; k < kmax; k++) {
-                            double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)]
-                                    * chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1]
-                                    * chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2]
-                                    * chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                            double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)] *
+                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                            double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1] *
+                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                            double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2] *
+                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
                             vx += vxp;
                             vy += vyp;
                             vz += vzp;
@@ -674,7 +670,7 @@ int main(int argc, char **argv) {
                     }
                 }
                 std::cout << "net flow xz: " << vx / chebData.weights[0] << "," << vy / chebData.weights[0] << ","
-                        << vz / chebData.weights[0] << std::endl;
+                          << vz / chebData.weights[0] << std::endl;
 
                 imax = 1;
                 jmax = dimension;
@@ -683,12 +679,12 @@ int main(int argc, char **argv) {
                 for (int i = 0; i < imax; i++) {
                     for (int j = 0; j < jmax; j++) {
                         for (int k = 0; k < kmax; k++) {
-                            double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)]
-                                    * chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1]
-                                    * chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2]
-                                    * chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                            double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)] *
+                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                            double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1] *
+                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                            double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2] *
+                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
                             vx += vxp;
                             vy += vyp;
                             vz += vzp;
@@ -696,7 +692,7 @@ int main(int argc, char **argv) {
                     }
                 }
                 std::cout << "net flow yz: " << vx / chebData.weights[0] << "," << vy / chebData.weights[0] << ","
-                        << vz / chebData.weights[0] << std::endl;
+                          << vz / chebData.weights[0] << std::endl;
             }
         }
     }
