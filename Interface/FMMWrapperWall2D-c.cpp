@@ -29,7 +29,9 @@ void FMMWall2D_UpdateTree(FMM_WrapperWall2D* fmm, const double* trg_coord, const
   std::vector<double> src_coord_vec(src_coord, src_coord + 3*num_src);
 
   // Call method to update Tree
+  MPI_Barrier(MPI_COMM_WORLD);
   fmm->FMM_UpdateTree(src_coord_vec, trg_coord_vec);
+  MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void FMMWall2D_Evaluate(FMM_WrapperWall2D* fmm, double *trg_value, const double *src_value, const int num_trg, const int num_src){
@@ -39,7 +41,9 @@ void FMMWall2D_Evaluate(FMM_WrapperWall2D* fmm, double *trg_value, const double 
   std::vector<double> src_value_vec(src_value, src_value + 3*num_src);
 
   // Call method to evaluate FMM
+  MPI_Barrier(MPI_COMM_WORLD);
   fmm->FMM_Evaluate(trg_value_vec, num_trg, &src_value_vec);
+  MPI_Barrier(MPI_COMM_WORLD);
   
   // Copy vector to array
   std::copy(trg_value_vec.begin(), trg_value_vec.end(), trg_value);

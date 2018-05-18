@@ -41,6 +41,8 @@ int main(int argc, char** argv) {
         trgCoord[3 * i + 2] = 0;
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
+
     // FMM_Wrapper
     // Evaluate, clear, and Evaluate again
     {
