@@ -3,12 +3,12 @@
 
 extern "C" {
 
-FMM_WrapperWall2D* create_fmm_wrapper(int mult_order, int max_pts, int init_depth, int pbc){
+FMM_WrapperWall2D* create_fmm_wrapperwall2d(int mult_order, int max_pts, int init_depth, int pbc){
   return new FMM_WrapperWall2D(mult_order, max_pts, init_depth, static_cast<FMM_WrapperWall2D::PAXIS>(pbc));
 }
 
-void delete_fmm_wrapper(FMM_WrapperWall2D* fmm_wrapper){
-  delete fmm_wrapper;
+void delete_fmm_wrapperwall2d(FMM_WrapperWall2D* fmm){
+  delete fmm;
 }
     
 void FMMWall2D_SetBox(FMM_WrapperWall2D* fmm, double xlow, double xhigh, double ylow, double yhigh, double zlow, double zhigh){

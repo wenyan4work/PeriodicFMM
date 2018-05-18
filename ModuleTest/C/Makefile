@@ -15,7 +15,7 @@ CC = mpicc
 CFLAGS = $(CXXFLAGS) -std=c99
 
 EXE =   TestCAPI.X
-OBJ =   $(SRC:.cpp=.o) main.o
+OBJ =    main.o ../../FMM/FMMWrapper.o ../../FMM/FMMWrapperWall2D.o ../../Interface/FMMWrapper-c.o ../../Interface/FMMWrapperWall2D-c.o
 
 # Link rule
 $(EXE):	$(OBJ)
