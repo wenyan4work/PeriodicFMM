@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv) {
     MPI_Init(&argc,&argv);
-    int rank,size;
+    int rank=0,size=0;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&size);
 
@@ -36,9 +36,9 @@ int main(int argc, char** argv) {
         srcValue[3 * i + 1] = sin(sin(seed));
         srcValue[3 * i + 2] = cos(sin(seed));
 
-        trgCoord[3 * i] = 0;
-        trgCoord[3 * i + 1] = 0;
-        trgCoord[3 * i + 2] = 0;
+        trgValue[3 * i] = 0;
+        trgValue[3 * i + 1] = 0;
+        trgValue[3 * i + 2] = 0;
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -77,6 +77,6 @@ int main(int argc, char** argv) {
     free(srcValue);
     free(trgValue);
 
-    MPI_Finalize();
+    // MPI_Finalize();
     return 0;
 }
