@@ -17,7 +17,7 @@
 
 class FMM_WrapperWall2D {
   public:
-    enum PAXIS { NONE, PXY };
+    enum PAXIS { NONE = 0, PXY = 4 };
 
     const PAXIS pbc;
 

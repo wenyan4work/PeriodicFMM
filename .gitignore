@@ -1,6 +1,6 @@
-*.X
-*.o
-*.vtk
+**.X
+**.o
+**.vtk
 .cproject
 .project
 .ipynb_checkpoints/

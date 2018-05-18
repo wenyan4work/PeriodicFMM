@@ -17,7 +17,7 @@
 
 class FMM_Wrapper {
   public:
-    enum PAXIS { NONE, PXYZ, PX, PY, PZ, PXY, PXZ, PYZ };
+    enum PAXIS { NONE = 0, PX = 1, PY = 2, PZ = 3, PXY = 4, PXZ = 5, PYZ = 6, PXYZ = 7 };
 
     const PAXIS pbc;
 
