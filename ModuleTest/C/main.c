@@ -8,7 +8,7 @@
 #include "Interface/FMMWrapperWall2D-c.h"
 
 int main(int argc, char** argv) {
-    MPI_Init(argc,argv);
+    MPI_Init(&argc,&argv);
     int rank,size;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&size);
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     // FMM_Wrapper
     // Evaluate, clear, and Evaluate again
     {
-        FMM_Wrapper *fmm = create_fmm_wrappper(8, 2000, 0, 7);
+        FMM_Wrapper *fmm = create_fmm_wrapper(8, 2000, 0, 7);
         FMM_SetBox(fmm, 0, 1, 0, 1, 0, 1);
         FMM_UpdateTree(fmm, trgCoord, srcCoord, ntrg, nsrc);
         FMM_Evaluate(fmm, trgValue, srcValue, ntrg, nsrc);
@@ -56,8 +56,13 @@ int main(int argc, char** argv) {
     // FMM_WrapperWall2D
     // Evaluate, clear, and Evaluate again
     {
-        FMM_WrapperWall2D *fmm = create_fmm_wrappperwall2d(8, 2000, 0, 4);
-        FMMWall2D_SetBox(fmm, 0, 1, 0, 1, 0, 1);
+        for (int i = 0; i < nsrc; i++) {
+            srcCoord[3 * i + 2] = sin(exp(i))*0.499;
+            trgCoord[3 * i + 2] = cos(exp(i))*0.499;
+        }
+
+        FMM_WrapperWall2D *fmm = create_fmm_wrapperwall2d(8, 2000, 0, 4);
+        FMMWall2D_SetBox(fmm, 0, 1, 0, 1, 0, 0.499);
         FMMWall2D_UpdateTree(fmm, trgCoord, srcCoord, ntrg, nsrc);
         FMMWall2D_Evaluate(fmm, trgValue, srcValue, ntrg, nsrc);
         FMMWall2D_DataClear(fmm);

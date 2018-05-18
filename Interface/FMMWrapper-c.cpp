@@ -3,7 +3,7 @@
 
 extern "C" {
 
-FMM_Wrapper* create_fmm_wrapper(int mult_order, int max_pts, int init_depth, int pbc){
+FMM_Wrapper *create_fmm_wrapper(int mult_order, int max_pts, int init_depth, int pbc){
   return new FMM_Wrapper(mult_order, max_pts, init_depth, static_cast<FMM_Wrapper::PAXIS>(pbc));
 }
 

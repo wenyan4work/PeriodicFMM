@@ -5,7 +5,7 @@ extern "C" {
 
 typedef struct FMM_WrapperWall2D FMM_WrapperWall2D;
 
-FMM_WrapperWall2D *create_fmm_wrappperwall2d(int mult_order, int max_pts, int init_depth, int pbc);
+FMM_WrapperWall2D *create_fmm_wrapperwall2d(int mult_order, int max_pts, int init_depth, int pbc);
 
 void delete_fmm_wrapperwall2d(FMM_WrapperWall2D *fmm);
 

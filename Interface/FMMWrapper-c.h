@@ -5,7 +5,7 @@ extern "C" {
 
 typedef struct FMM_Wrapper FMM_Wrapper;
 
-FMM_Wrapper *create_fmm_wrappper(int mult_order, int max_pts, int init_depth, int pbc);
+FMM_Wrapper *create_fmm_wrapper(int mult_order, int max_pts, int init_depth, int pbc);
 
 void delete_fmm_wrapper(FMM_Wrapper *fmm);
 

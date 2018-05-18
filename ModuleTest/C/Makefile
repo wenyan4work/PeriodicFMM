@@ -1,8 +1,8 @@
 include ../MakefileInc.mk
 
-INCLUDE_DIRS = $(Trilinos_INCLUDE_DIRS) $(Trilinos_TPL_INCLUDE_DIRS) $(USERINCLUDE) -I../../
-LIBRARY_DIRS = $(Trilinos_LIBRARY_DIRS) $(Trilinos_TPL_LIBRARY_DIRS) 
-LIBRARIES = $(Trilinos_LIBRARIES) $(Trilinos_TPL_LIBRARIES) $(USERLIB)
+INCLUDE_DIRS = $(USERINCLUDE) -I../../
+LIBRARY_DIRS =
+LIBRARIES =
 # Files
 
 SRC =   main.c ../../FMM/FMMWrapper.cpp ../../FMM/FMMWrapperWall2D.cpp ../../Interface/FMMWrapper-c.cpp ../../Interface/FMMWrapperWall2D-c.cpp
@@ -13,6 +13,9 @@ CXXFLAGS += -DFMMTIMING
 
 CC = mpicc
 CFLAGS = $(CXXFLAGS) -std=c99
+
+LINK := mpicc
+LINKFLAGS := $(CFLAGS) $(LINKFLAGS)
 
 EXE =   TestCAPI.X
 OBJ =    main.o ../../FMM/FMMWrapper.o ../../FMM/FMMWrapperWall2D.o ../../Interface/FMMWrapper-c.o ../../Interface/FMMWrapperWall2D-c.o
