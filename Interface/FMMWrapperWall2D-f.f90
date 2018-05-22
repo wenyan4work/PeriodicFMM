@@ -8,7 +8,8 @@ module fmmwrapperwall2d
 
    interface
 
-      function create_fmm_wrapperwall2d(mult_order, max_pts, init_depth, pbc) result(fmm_wrapper) bind(C, name="create_fmm_wrapperwall2d")
+      function create_fmm_wrapperwall2d(mult_order, max_pts, init_depth, pbc) result(fmm_wrapper) &
+         bind(C, name="create_fmm_wrapperwall2d")
          use iso_c_binding
          implicit none
          type(c_ptr):: fmm_wrapper
@@ -47,7 +48,8 @@ module fmmwrapperwall2d
          use iso_c_binding
          implicit none
          type(c_ptr), intent(in), value :: fmm
-         real(c_double), intent(in) :: src_coord(*), trg_coord(*)
+         real(c_double), intent(in) :: src_coord(*)
+         real(c_double), intent(in):: trg_coord(*)
          integer(c_int), intent(in), value :: num_src, num_trg
       end subroutine FMMWall2D_UpdateTree
 
@@ -55,10 +57,10 @@ module fmmwrapperwall2d
          use iso_c_binding
          implicit none
          type(c_ptr), intent(in), value :: fmm
-         real(c_double), intent(in) :: src_value(*)
-         real(c_double), intent(inout) :: trg_value(*)
+         real(c_double), intent(in):: src_value(*)
+         real(c_double), intent(inout):: trg_value(*)
          integer(c_int), intent(in), value :: num_src, num_trg
       end subroutine FMMWall2D_Evaluate
 
    end interface
-end module fmmwrapper
+end module fmmwrapperwall2d

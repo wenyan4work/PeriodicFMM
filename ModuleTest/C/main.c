@@ -24,17 +24,21 @@ int main(int argc, char** argv) {
     // some arbitrary data
     for (int i = 0; i < nsrc; i++) {
         int seed = rank*nsrc+i;
-        srcCoord[3 * i] = sin(seed);
-        srcCoord[3 * i + 1] = cos(seed);
-        srcCoord[3 * i + 2] = sin(exp(seed));
-
-        trgCoord[3 * i] = cos(seed);
-        trgCoord[3 * i + 1] = sin(seed);
-        trgCoord[3 * i + 2] = cos(exp(seed));
+        srcCoord[3 * i] = fabs(sin(seed));
+        srcCoord[3 * i + 1] = fabs(cos(seed));
+        srcCoord[3 * i + 2] = fabs(sin(seed*seed));
 
         srcValue[3 * i] = sin(seed);
         srcValue[3 * i + 1] = sin(sin(seed));
         srcValue[3 * i + 2] = cos(sin(seed));
+    }
+
+    for (int i = 0; i < ntrg; i++) {
+        int seed = rank*nsrc+i;
+
+        trgCoord[3 * i] = fabs(cos(seed));
+        trgCoord[3 * i + 1] = fabs(sin(seed));
+        trgCoord[3 * i + 2] = fabs(cos(seed*seed));
 
         trgValue[3 * i] = 0;
         trgValue[3 * i + 1] = 0;
@@ -59,12 +63,14 @@ int main(int argc, char** argv) {
     // Evaluate, clear, and Evaluate again
     {
         for (int i = 0; i < nsrc; i++) {
-            srcCoord[3 * i + 2] = sin(exp(i))*0.499;
-            trgCoord[3 * i + 2] = cos(exp(i))*0.499;
+            srcCoord[3 * i + 2] *=0.499;
+        }
+        for (int i = 0; i < ntrg; i++) {
+            trgCoord[3 * i + 2] *=0.499;
         }
 
         FMM_WrapperWall2D *fmm = create_fmm_wrapperwall2d(8, 2000, 0, 4);
-        FMMWall2D_SetBox(fmm, 0, 1, 0, 1, 0, 0.499);
+        FMMWall2D_SetBox(fmm, 0, 1, 0, 1, 0, 0.4999);
         FMMWall2D_UpdateTree(fmm, trgCoord, srcCoord, ntrg, nsrc);
         FMMWall2D_Evaluate(fmm, trgValue, srcValue, ntrg, nsrc);
         FMMWall2D_DataClear(fmm);

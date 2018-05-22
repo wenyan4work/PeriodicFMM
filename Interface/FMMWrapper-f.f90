@@ -47,7 +47,8 @@ module fmmwrapper
          use iso_c_binding
          implicit none
          type(c_ptr), intent(in), value :: fmm
-         real(c_double), intent(in) :: src_coord(*), trg_coord(*)
+          real(c_double), intent(in) :: src_coord(*)
+          real(c_double), intent(in):: trg_coord(*)
          integer(c_int), intent(in), value :: num_src, num_trg
       end subroutine FMM_UpdateTree
 
@@ -55,8 +56,8 @@ module fmmwrapper
          use iso_c_binding
          implicit none
          type(c_ptr), intent(in), value :: fmm
-         real(c_double), intent(in) :: src_value(*)
-         real(c_double), intent(inout) :: trg_value(*)
+         real(c_double), intent(in):: src_value(*)
+         real(c_double), intent(inout):: trg_value(*)
          integer(c_int), intent(in), value :: num_src, num_trg
       end subroutine FMM_Evaluate
 
