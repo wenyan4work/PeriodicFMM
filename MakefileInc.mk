@@ -1,8 +1,4 @@
-# CCB014
 SFTPATH=/mnt/home/wyan/local
-
-# Mac 
-# SFTPATH=/Users/wyan/local
 
 include $(PVFMM_DIR)/MakeVariables
 EIGEN= $(SFTPATH)/include/eigen3

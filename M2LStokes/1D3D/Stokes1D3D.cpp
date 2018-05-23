@@ -9,7 +9,7 @@
 #include <iostream>
 
 #include "Eigen/Dense"
-#include "../../common/SVD_pvfmm.hpp"
+#include "../../Util/SVD_pvfmm.hpp"
 
 #define DIRECTLAYER 2
 

@@ -10,7 +10,7 @@
 #include <chrono>
 
 #include "Eigen/Dense"
-#include "../../common/SVD_pvfmm.hpp"
+#include "../../Util/SVD_pvfmm.hpp"
 #include "boost/math/special_functions/erf.hpp"
 
 #define DIRECTLAYER 2

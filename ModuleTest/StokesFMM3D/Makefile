@@ -1,4 +1,4 @@
-include ../MakefileInc.mk
+include ../../MakefileInc.mk
 
 INCLUDE_DIRS = $(USERINCLUDE) -I../../
 LIBRARY_DIRS = 

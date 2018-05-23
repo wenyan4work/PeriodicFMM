@@ -1,4 +1,4 @@
-include ../MakefileInc.mk
+include ../../MakefileInc.mk
 
 INCLUDE_DIRS = $(USERINCLUDE) -I../../
 LIBRARY_DIRS =
@@ -17,8 +17,8 @@ CFLAGS = $(CXXFLAGS) -std=c99
 LINK := mpicc
 LINKFLAGS := $(CFLAGS) $(LINKFLAGS)
 
-EXE =   TestCAPI.X
-OBJ =    main.o ../../FMM/FMMWrapper.o ../../FMM/FMMWrapperWall2D.o ../../Interface/FMMWrapper-c.o ../../Interface/FMMWrapperWall2D-c.o
+EXE = TestCAPI.X
+OBJ = main.o ../../FMM/FMMWrapper.o ../../FMM/FMMWrapperWall2D.o ../../Interface/FMMWrapper-c.o ../../Interface/FMMWrapperWall2D-c.o
 
 # Link rule
 $(EXE):	$(OBJ)
