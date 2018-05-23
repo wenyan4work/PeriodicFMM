@@ -18,20 +18,12 @@ LINK= $(CXX)
 CXXFLAGS= $(CXXFLAGS_PVFMM) 
 LINKFLAGS= $(CXXFLAGS) $(LDLIBS_PVFMM) 
 
-# remove some flags for debugging
-# if Trilinos and pvfmm are compiled with ipo, removing this may cause linking failures
-
 # debug
 DEBUGMODE:= no
 
 # debug flags
 # CXXFLAGS += -DFMMTIMING 
 # CXXFLAGS += -DFMMDEBUG
-# CXXFLAGS += -DDEBUGLCPCOL 
-# CXXFLAGS += -DZDDDEBUG 
-# CXXFLAGS += -DIFPACKDEBUG 
-# CXXFLAGS += -DMYDEBUGINFO 
-# CXXFLAGS += -DHYRDRODEBUG
 
 ifeq ($(DEBUGMODE), yes)
 CXXFLAGS:= $(subst -O3, ,$(CXXFLAGS))

@@ -1,10 +1,10 @@
 # PeriodicFMM
-The periodic wrapper and operator data generator to be used with PVFMM
+The C++/C/Fortran wrapper for flexibly periodic FMM and operator data generator to be used with PVFMM.
 
 The flexibly periodic KIFMM algorithm is described in:
 
 Wen Yan & Michael Shelley, Flexibly imposing periodicity in kernel independent FMM: A Multipole-To-Local operator approach
-Journal of Computional Physics, Volume 355, 2018, Pages 214-232, https://doi.org/10.1016/j.jcp.2017.11.012. 
+Journal of Computional Physics, Volume 355, 2018, Pages 214-232, 10.1016/j.jcp.2017.11.012. 
 
 The flexibly periodic Stokeslet Image algorithm is described in:
 

@@ -1,8 +1,8 @@
 include ../MakefileInc.mk
 
-INCLUDE_DIRS = $(Trilinos_INCLUDE_DIRS) $(Trilinos_TPL_INCLUDE_DIRS) $(USERINCLUDE) -I../../
-LIBRARY_DIRS = $(Trilinos_LIBRARY_DIRS) $(Trilinos_TPL_LIBRARY_DIRS) 
-LIBRARIES = $(Trilinos_LIBRARIES) $(Trilinos_TPL_LIBRARIES) $(USERLIB)
+INCLUDE_DIRS = $(USERINCLUDE) -I../../
+LIBRARY_DIRS =
+LIBRARIES = $(USERLIB)
 # Files
 
 SRC =   main.cpp ChebNodal.cpp ../../FMM/FMMWrapperWall2D.cpp
