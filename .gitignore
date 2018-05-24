@@ -4,8 +4,10 @@
 .cproject
 .project
 .ipynb_checkpoints/
+.ipynb**/
 .settings/
 .vscode/
 temp
 **.mod
 **/randomPoints
+
