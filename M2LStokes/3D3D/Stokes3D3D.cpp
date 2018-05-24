@@ -5,20 +5,19 @@
  *      Author: wyan
  */
 
+#include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <chrono>
 
-#include "Eigen/Dense"
+#include <Eigen/Dense>
+#include <boost/math/special_functions/erf.hpp>
+
 #include "../../Util/SVD_pvfmm.hpp"
-#include "boost/math/special_functions/erf.hpp"
 
 #define DIRECTLAYER 2
 #define PI314 (3.1415926535897932384626433)
 
-inline double ERFC(double x) {
-    return boost::math::erfc(x);
-}
+inline double ERFC(double x) { return boost::math::erfc(x); }
 
 /*
  * def AEW(xi,rvec):
@@ -31,9 +30,9 @@ inline double ERFC(double x) {
  * */
 inline Eigen::Matrix3d AEW(const double xi, const Eigen::Vector3d &rvec) {
     const double r = rvec.norm();
-    Eigen::Matrix3d A = 2 * (xi * exp(-(xi * xi) * (r * r)) / (sqrt(PI314) * r * r) + erfc(xi * r) / (2 * r * r * r))
-            * (r * r * Eigen::Matrix3d::Identity() + (rvec * rvec.transpose()))
-            - 4 * xi / sqrt(PI314) * exp(-(xi * xi) * (r * r)) * Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d A = 2 * (xi * exp(-(xi * xi) * (r * r)) / (sqrt(PI314) * r * r) + erfc(xi * r) / (2 * r * r * r)) *
+                            (r * r * Eigen::Matrix3d::Identity() + (rvec * rvec.transpose())) -
+                        4 * xi / sqrt(PI314) * exp(-(xi * xi) * (r * r)) * Eigen::Matrix3d::Identity();
     return A;
 }
 
@@ -48,8 +47,8 @@ inline Eigen::Matrix3d AEW(const double xi, const Eigen::Vector3d &rvec) {
  * */
 inline Eigen::Matrix3d BEW(const double xi, const Eigen::Vector3d &kvec) {
     const double k = kvec.norm();
-    Eigen::Matrix3d B = 8 * PI314 * (1 + k * k / (4 * (xi * xi)))
-            * ((k * k) * Eigen::Matrix3d::Identity() - (kvec * kvec.transpose())) / (k * k * k * k);
+    Eigen::Matrix3d B = 8 * PI314 * (1 + k * k / (4 * (xi * xi))) *
+                        ((k * k) * Eigen::Matrix3d::Identity() - (kvec * kvec.transpose())) / (k * k * k * k);
     B *= exp(-k * k / (4 * xi * xi));
     return B;
 }
@@ -171,7 +170,7 @@ inline void GkernelEwaldO1(const Eigen::Vector3d &rvec, Eigen::Matrix3d &GsumO1)
  * format [x0 y0 z0 x1 y1 z1 .... ].
  */
 
-template<class Real_t>
+template <class Real_t>
 std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     size_t n_ = (6 * (p - 1) * (p - 1) + 2); // Total number of points.
 
@@ -212,7 +211,7 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     return coord;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     Eigen::initParallel();
     Eigen::setNbThreads(1);
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
@@ -221,19 +220,23 @@ int main(int argc, char** argv) {
     const int pCheck = atoi(argv[1]);
     const double scaleEquiv = 1.05;
     const double scaleCheck = 2.95;
-    const double pCenterEquiv[3] = { -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2 };
-    const double pCenterCheck[3] = { -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2 };
+    const double pCenterEquiv[3] = {-(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2};
+    const double pCenterCheck[3] = {-(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2};
 
     const double scaleLEquiv = 1.05;
     const double scaleLCheck = 2.95;
-    const double pCenterLEquiv[3] = { -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2 };
-    const double pCenterLCheck[3] = { -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2 };
+    const double pCenterLEquiv[3] = {-(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2};
+    const double pCenterLCheck[3] = {-(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2};
 
-    auto pointMEquiv = surface(pEquiv, (double *) &(pCenterEquiv[0]), scaleEquiv, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointMCheck = surface(pCheck, (double *) &(pCenterCheck[0]), scaleCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointMEquiv = surface(pEquiv, (double *)&(pCenterEquiv[0]), scaleEquiv,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointMCheck = surface(pCheck, (double *)&(pCenterCheck[0]), scaleCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
-    auto pointLEquiv = surface(pEquiv, (double *) &(pCenterLCheck[0]), scaleLCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointLCheck = surface(pCheck, (double *) &(pCenterLEquiv[0]), scaleLEquiv, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLEquiv = surface(pEquiv, (double *)&(pCenterLCheck[0]), scaleLCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLCheck = surface(pCheck, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
     //	for (int i = 0; i < pointLEquiv.size() / 3; i++) {
     //		std::cout << pointLEquiv[3 * i] << " " << pointLEquiv[3 * i + 1] <<
@@ -289,7 +292,7 @@ int main(int argc, char** argv) {
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     std::cout << "Precomputing time:" << duration / 1e6 << std::endl;
-//    exit(1);
+    //    exit(1);
     // dump M2L
     for (int i = 0; i < 3 * equivN; i++) {
         for (int j = 0; j < 3 * equivN; j++) {

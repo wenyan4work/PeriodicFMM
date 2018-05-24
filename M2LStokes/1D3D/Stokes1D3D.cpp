@@ -8,7 +8,8 @@
 #include <iomanip>
 #include <iostream>
 
-#include "Eigen/Dense"
+#include <Eigen/Dense>
+
 #include "../../Util/SVD_pvfmm.hpp"
 
 #define DIRECTLAYER 2
@@ -22,7 +23,7 @@
  * \return Vector with coordinates of points on the surface of the cube in the
  * format [x0 y0 z0 x1 y1 z1 .... ].
  */
-template<class Real_t>
+template <class Real_t>
 std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     size_t n_ = (6 * (p - 1) * (p - 1) + 2); // Total number of points.
 
@@ -77,7 +78,7 @@ inline void Gkernel(const Eigen::Vector3d &target, const Eigen::Vector3d &source
 }
 
 // calculate the M2L matrix of images from 2 to 1000
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     Eigen::initParallel();
     Eigen::setNbThreads(1);
 
@@ -85,13 +86,17 @@ int main(int argc, char** argv) {
     const int pCheck = atoi(argv[1]);
     const double scaleEquiv = 1.05;
     const double scaleCheck = 2.95;
-    const double pCenterEquiv[3] = { -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2 };
-    const double pCenterCheck[3] = { -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2 };
-    auto pointMEquiv = surface(pEquiv, (double *) &(pCenterEquiv[0]), scaleEquiv, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointMCheck = surface(pCheck, (double *) &(pCenterCheck[0]), scaleCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    const double pCenterEquiv[3] = {-(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2};
+    const double pCenterCheck[3] = {-(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2};
+    auto pointMEquiv = surface(pEquiv, (double *)&(pCenterEquiv[0]), scaleEquiv,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointMCheck = surface(pCheck, (double *)&(pCenterCheck[0]), scaleCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
-    auto pointLEquiv = surface(pEquiv, (double *) &(pCenterCheck[0]), scaleCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointLCheck = surface(pCheck, (double *) &(pCenterEquiv[0]), scaleEquiv, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLEquiv = surface(pEquiv, (double *)&(pCenterCheck[0]), scaleCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLCheck = surface(pCheck, (double *)&(pCenterEquiv[0]), scaleEquiv,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
     //	for (int i = 0; i < pointLEquiv.size() / 3; i++) {
     //		std::cout << pointLEquiv[3 * i] << " " << pointLEquiv[3 * i + 1] <<

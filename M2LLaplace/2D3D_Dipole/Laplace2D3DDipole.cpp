@@ -8,10 +8,10 @@
 #include <iomanip>
 #include <iostream>
 
-#include "Eigen/Dense"
-#include "../../Util/SVD_pvfmm.hpp"
-
+#include <Eigen/Dense>
 #include <boost/math/special_functions/erf.hpp>
+
+#include "../../Util/SVD_pvfmm.hpp"
 
 #define DIRECTLAYER 2
 #define PI314 (static_cast<double>(3.1415926535897932384626433))
@@ -19,12 +19,8 @@
 
 using EVec3 = Eigen::Vector3d;
 
-inline double ERFC(double x) {
-    return boost::math::erfc(x);
-}
-inline double ERF(double x) {
-    return boost::math::erf(x);
-}
+inline double ERFC(double x) { return boost::math::erfc(x); }
+inline double ERF(double x) { return boost::math::erf(x); }
 
 // real and wave sum of 2D Laplace kernel Ewald
 
@@ -35,8 +31,8 @@ inline EVec3 realSum(const double xi, const EVec3 &xn, const EVec3 &xm) {
     if (rnorm < 1e-14) {
         return EVec3(0, 0, 0);
     }
-    return (2 * xi * exp(-xi * xi * rnorm * rnorm) / (sqrt(PI314) * rnorm * rnorm) + ERFC(xi * rnorm) / pow(rnorm, 3))
-            * rmn;
+    return (2 * xi * exp(-xi * xi * rnorm * rnorm) / (sqrt(PI314) * rnorm * rnorm) + ERFC(xi * rnorm) / pow(rnorm, 3)) *
+           rmn;
 }
 
 // xm: target, xn: source
@@ -53,9 +49,9 @@ inline double gkzxi(const double k, double zmn, double xi) {
 
 // z=zmn, target-source
 inline double g2kzxi(const double k, double z, double xi) {
-    double answer = (2 * exp(-(k * z) - pow(k / (2. * xi) - xi * z, 2)) * xi) / sqrt(PI314)
-            - (2 * exp(k * z - pow(k / (2. * xi) + xi * z, 2)) * xi) / sqrt(PI314)
-            - (k * ERFC(k / (2. * xi) - xi * z)) / exp(k * z) + exp(k * z) * k * ERFC(k / (2. * xi) + xi * z);
+    double answer = (2 * exp(-(k * z) - pow(k / (2. * xi) - xi * z, 2)) * xi) / sqrt(PI314) -
+                    (2 * exp(k * z - pow(k / (2. * xi) + xi * z, 2)) * xi) / sqrt(PI314) -
+                    (k * ERFC(k / (2. * xi) - xi * z)) / exp(k * z) + exp(k * z) * k * ERFC(k / (2. * xi) + xi * z);
     return -answer;
 }
 
@@ -149,7 +145,7 @@ inline EVec3 gKernelFF(const EVec3 &target, const EVec3 &source) {
  * format [x0 y0 z0 x1 y1 z1 .... ].
  */
 
-template<class Real_t>
+template <class Real_t>
 std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     size_t n_ = (6 * (p - 1) * (p - 1) + 2); // Total number of points.
 
@@ -190,7 +186,7 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     return coord;
 }
 
-int main(int argc, char**argv) {
+int main(int argc, char **argv) {
     Eigen::initParallel();
     Eigen::setNbThreads(1);
 
@@ -199,35 +195,38 @@ int main(int argc, char**argv) {
     std::cout << std::setprecision(16) << "zeroTest: " << zeroTest << std::endl;
 
     double centerTest = gKernelEwald(EVec3(0, 0, 0), EVec3(0.5, 0.5, 0.5)).dot(EVec3(0.5, 0.5, 0.5));
-    std::cout << std::setprecision(16) << "centerTest: " << centerTest << " error: "
-            << centerTest + 2.7491275138731747774 << std::endl;
+    std::cout << std::setprecision(16) << "centerTest: " << centerTest
+              << " error: " << centerTest + 2.7491275138731747774 << std::endl;
 
     centerTest = gKernelEwald(EVec3(0.2, 0.3, 0.4), EVec3(0.3, 0.6, 0.5)).dot(EVec3(3, 2, 1));
-    std::cout << std::setprecision(16) << "centerTest2: " << centerTest << " error: "
-            << centerTest + 24.54255829939675948 << std::endl;
+    std::cout << std::setprecision(16) << "centerTest2: " << centerTest
+              << " error: " << centerTest + 24.54255829939675948 << std::endl;
 
     centerTest = gKernelEwald(EVec3(0.7, 0.9, 0.7), EVec3(0.2, 0.3, 0.4)).dot(EVec3(0.1, 2, 0.3));
-    std::cout << std::setprecision(16) << "centerTest2: " << centerTest << " error: "
-            << centerTest - 0.36577859302782289586 << std::endl;
+    std::cout << std::setprecision(16) << "centerTest2: " << centerTest
+              << " error: " << centerTest - 0.36577859302782289586 << std::endl;
 
     const int pEquiv = atoi(argv[1]); // (8-1)^2*6 + 2 points
     const int pCheck = atoi(argv[1]);
     const double scaleEquiv = 1.05;
     const double scaleCheck = 2.95;
-    const double pCenterEquiv[3] = { -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2 };
-    const double pCenterCheck[3] = { -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2 };
+    const double pCenterEquiv[3] = {-(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2};
+    const double pCenterCheck[3] = {-(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2};
 
     const double scaleLEquiv = 1.05;
     const double scaleLCheck = 2.95;
-    const double pCenterLEquiv[3] = { -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2 };
-    const double pCenterLCheck[3] = { -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2 };
+    const double pCenterLEquiv[3] = {-(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2};
+    const double pCenterLCheck[3] = {-(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2};
 
-    auto pointMEquiv = surface(pEquiv, (double *) &(pCenterEquiv[0]), scaleEquiv, 0);
+    auto pointMEquiv = surface(pEquiv, (double *)&(pCenterEquiv[0]), scaleEquiv, 0);
     // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointMCheck = surface(pCheck, (double *) &(pCenterCheck[0]), scaleCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth =0
+    auto pointMCheck = surface(pCheck, (double *)&(pCenterCheck[0]), scaleCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth =0
 
-    auto pointLEquiv = surface(pEquiv, (double *) &(pCenterLCheck[0]), scaleLCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth =  0
-    auto pointLCheck = surface(pCheck, (double *) &(pCenterLEquiv[0]), scaleLEquiv, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLEquiv = surface(pEquiv, (double *)&(pCenterLCheck[0]), scaleLCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth =  0
+    auto pointLCheck = surface(pCheck, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
     // calculate the operator M2L with least square
     const int equivN = pointMEquiv.size() / 3;

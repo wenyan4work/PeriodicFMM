@@ -8,10 +8,10 @@
 #include <iomanip>
 #include <iostream>
 
-#include "../../Util/SVD_pvfmm.hpp"
-#include "Eigen/Dense"
-
+#include <Eigen/Dense>
 #include <boost/math/special_functions/erf.hpp>
+
+#include "../../Util/SVD_pvfmm.hpp"
 
 #define DIRECTLAYER 2
 #define PI314 (static_cast<double>(3.1415926535897932384626433))

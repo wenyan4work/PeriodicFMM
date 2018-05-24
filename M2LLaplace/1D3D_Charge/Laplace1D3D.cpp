@@ -5,10 +5,11 @@
  *      Author: wyan
  */
 
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include "Eigen/Dense"
+#include <Eigen/Dense>
+
 #include "../../Util/SVD_pvfmm.hpp"
 
 #define DIRECTLAYER 2
@@ -16,7 +17,7 @@
 
 using EVec3 = Eigen::Vector3d;
 
-inline double gKernel(const EVec3 & target, const EVec3 & source) {
+inline double gKernel(const EVec3 &target, const EVec3 &source) {
     EVec3 rst = target - source;
     double rnorm = rst.norm();
     return rnorm < 1e-14 ? 0 : 1 / rnorm;
@@ -32,9 +33,9 @@ inline double gKernel(const EVec3 & target, const EVec3 & source) {
  * format [x0 y0 z0 x1 y1 z1 .... ].
  */
 
-template<class Real_t>
-std::vector<Real_t> surface(int p, Real_t* c, Real_t alpha, int depth) {
-    size_t n_ = (6 * (p - 1) * (p - 1) + 2);  //Total number of points.
+template <class Real_t>
+std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
+    size_t n_ = (6 * (p - 1) * (p - 1) + 2); // Total number of points.
 
     std::vector<Real_t> coord(n_ * 3);
     coord[0] = coord[1] = coord[2] = -1.0;
@@ -73,7 +74,7 @@ std::vector<Real_t> surface(int p, Real_t* c, Real_t alpha, int depth) {
     return coord;
 }
 
-double directSum(const EVec3 & target, const EVec3 & source, const int directTerm = 1000000) {
+double directSum(const EVec3 &target, const EVec3 &source, const int directTerm = 1000000) {
     // use asymptotic
     const double A = (target - source).dot(target - source);
     const double c = fabs(target[2] - source[2]);
@@ -81,14 +82,14 @@ double directSum(const EVec3 & target, const EVec3 & source, const int directTer
     double potentialDirect = 0;
     for (int t = DIRECTLAYER + 1; t < directTerm; t++) {
         // 100000 gives Madelung to 1e-8
-        potentialDirect += gKernel(target, source + EVec3(0, 0, t * L3))
-                + gKernel(target, source - EVec3(0, 0, t * L3));
+        potentialDirect +=
+            gKernel(target, source + EVec3(0, 0, t * L3)) + gKernel(target, source - EVec3(0, 0, t * L3));
     }
 
     return potentialDirect;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     Eigen::initParallel();
     Eigen::setNbThreads(1);
 
@@ -96,24 +97,28 @@ int main(int argc, char** argv) {
     const int pCheck = atoi(argv[1]);
     const double scaleEquiv = 1.05;
     const double scaleCheck = 2.95;
-    const double pCenterEquiv[3] = { -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2 };
-    const double pCenterCheck[3] = { -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2 };
+    const double pCenterEquiv[3] = {-(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2};
+    const double pCenterCheck[3] = {-(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2};
 
     const double scaleLEquiv = 1.05;
     const double scaleLCheck = 2.95;
-    const double pCenterLEquiv[3] = { -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2 };
-    const double pCenterLCheck[3] = { -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2 };
+    const double pCenterLEquiv[3] = {-(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2};
+    const double pCenterLCheck[3] = {-(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2};
 
-    auto pointMEquiv = surface(pEquiv, (double *) &(pCenterEquiv[0]), scaleEquiv, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointMCheck = surface(pCheck, (double *) &(pCenterCheck[0]), scaleCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointMEquiv = surface(pEquiv, (double *)&(pCenterEquiv[0]), scaleEquiv,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointMCheck = surface(pCheck, (double *)&(pCenterCheck[0]), scaleCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
-    auto pointLEquiv = surface(pEquiv, (double *) &(pCenterLCheck[0]), scaleLCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointLCheck = surface(pCheck, (double *) &(pCenterLEquiv[0]), scaleLEquiv, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLEquiv = surface(pEquiv, (double *)&(pCenterLCheck[0]), scaleLCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLCheck = surface(pCheck, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
     // calculate the operator M2L with least square
     const int equivN = pointMEquiv.size() / 3;
     const int checkN = pointLCheck.size() / 3;
-    Eigen::MatrixXd M2L(equivN, equivN);  // Laplace, 1->1
+    Eigen::MatrixXd M2L(equivN, equivN); // Laplace, 1->1
 
     Eigen::MatrixXd A(1 * checkN, 1 * equivN);
     for (int k = 0; k < checkN; k++) {
@@ -130,17 +135,17 @@ int main(int argc, char** argv) {
 #pragma omp parallel for
     for (int i = 0; i < equivN; i++) {
         const Eigen::Vector3d Mpoint(pointMEquiv[3 * i], pointMEquiv[3 * i + 1], pointMEquiv[3 * i + 2]);
-//		std::cout << "debug:" << Mpoint << std::endl;
+        //		std::cout << "debug:" << Mpoint << std::endl;
 
         // assemble linear system
         Eigen::VectorXd f(checkN);
         for (int k = 0; k < checkN; k++) {
             Eigen::Vector3d Cpoint(pointLCheck[3 * k], pointLCheck[3 * k + 1], pointLCheck[3 * k + 2]);
-//			std::cout<<"debug:"<<k<<std::endl;
+            //			std::cout<<"debug:"<<k<<std::endl;
             // sum the images
-            f(k) = directSum(Cpoint, Mpoint);		//gKernelFF(Cpoint, Mpoint);
+            f(k) = directSum(Cpoint, Mpoint); // gKernelFF(Cpoint, Mpoint);
         }
-//		std::cout << "debug:" << f << std::endl;
+        //		std::cout << "debug:" << f << std::endl;
 
         M2L.col(i) = (ApinvU.transpose() * (ApinvVT.transpose() * f));
     }
@@ -244,4 +249,3 @@ int main(int argc, char** argv) {
 
     return 0;
 }
-

@@ -8,20 +8,17 @@
 #include <iomanip>
 #include <iostream>
 
-#include "Eigen/Dense"
+#include <Eigen/Dense>
+#include <boost/math/special_functions/erf.hpp>
+
 #include "../../Util/SVD_pvfmm.hpp"
-#include "boost/math/special_functions/erf.hpp"
 
 #define DIRECTLAYER 2
 #define PI314 (3.1415926535897932384626433)
 
-inline double ERFC(double x) {
-    return boost::math::erfc(x);
-}
+inline double ERFC(double x) { return boost::math::erfc(x); }
 
-inline double ERF(double x) {
-    return boost::math::erf(x);
-}
+inline double ERF(double x) { return boost::math::erf(x); }
 
 /*
  * def AEW(xi,rvec):
@@ -34,39 +31,29 @@ inline double ERF(double x) {
  * */
 inline Eigen::Matrix3d AEW(const double xi, const Eigen::Vector3d &rvec) {
     const double r = rvec.norm();
-    Eigen::Matrix3d A = 2 * (xi * exp(-(xi * xi) * (r * r)) / (sqrt(PI314) * r * r) + erfc(xi * r) / (2 * r * r * r))
-            * (r * r * Eigen::Matrix3d::Identity() + (rvec * rvec.transpose()))
-            - 4 * xi / sqrt(PI314) * exp(-(xi * xi) * (r * r)) * Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d A = 2 * (xi * exp(-(xi * xi) * (r * r)) / (sqrt(PI314) * r * r) + erfc(xi * r) / (2 * r * r * r)) *
+                            (r * r * Eigen::Matrix3d::Identity() + (rvec * rvec.transpose())) -
+                        4 * xi / sqrt(PI314) * exp(-(xi * xi) * (r * r)) * Eigen::Matrix3d::Identity();
     return A;
 }
 
-inline double lbda(double k, double xi, double z) {
-    return exp(-k * k / (4 * xi * xi) - (xi * xi) * (z * z));
-}
+inline double lbda(double k, double xi, double z) { return exp(-k * k / (4 * xi * xi) - (xi * xi) * (z * z)); }
 
-inline double thetaplus(double k, double xi, double z) {
-    return exp(k * z) * ERFC(k / (2 * xi) + xi * z);
-}
+inline double thetaplus(double k, double xi, double z) { return exp(k * z) * ERFC(k / (2 * xi) + xi * z); }
 
-inline double thetaminus(double k, double xi, double z) {
-    return exp(-k * z) * ERFC(k / (2 * xi) - xi * z);
-}
+inline double thetaminus(double k, double xi, double z) { return exp(-k * z) * ERFC(k / (2 * xi) - xi * z); }
 
-inline double J00(double k, double xi, double z) {
-    return sqrt(PI314) * lbda(k, xi, z) * xi;
-}
+inline double J00(double k, double xi, double z) { return sqrt(PI314) * lbda(k, xi, z) * xi; }
 
 inline double J10(double k, double xi, double z) {
     return PI314 * (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (4 * k);
 }
 
 inline double J20(double k, double xi, double z) {
-    return sqrt(PI314) * lbda(k, xi, z) / (4 * k * k * xi)
-            +
-            PI314
-                    * ((thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (8 * k * k * k)
-                            + (thetaminus(k, xi, z) - thetaplus(k, xi, z)) * z / (8 * k * k)
-                            - (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (16 * k * (xi * xi)));
+    return sqrt(PI314) * lbda(k, xi, z) / (4 * k * k * xi) +
+           PI314 * ((thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (8 * k * k * k) +
+                    (thetaminus(k, xi, z) - thetaplus(k, xi, z)) * z / (8 * k * k) -
+                    (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (16 * k * (xi * xi)));
 }
 
 inline double J12(double k, double xi, double z) {
@@ -74,20 +61,17 @@ inline double J12(double k, double xi, double z) {
 }
 
 inline double J22(double k, double xi, double z) {
-    return PI314
-            * ((thetaplus(k, xi, z) + thetaminus(k, xi, z)) * k / (16 * xi * xi)
-                    + (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (8 * k)
-                    + (thetaplus(k, xi, z) - thetaminus(k, xi, z)) * z / 8) - sqrt(PI314) * lbda(k, xi, z) / (4 * xi);
+    return PI314 * ((thetaplus(k, xi, z) + thetaminus(k, xi, z)) * k / (16 * xi * xi) +
+                    (thetaplus(k, xi, z) + thetaminus(k, xi, z)) / (8 * k) +
+                    (thetaplus(k, xi, z) - thetaminus(k, xi, z)) * z / 8) -
+           sqrt(PI314) * lbda(k, xi, z) / (4 * xi);
 }
 
-inline double K11(double k, double xi, double z) {
-    return PI314 * ((thetaminus(k, xi, z) - thetaplus(k, xi, z))) / 4;
-}
+inline double K11(double k, double xi, double z) { return PI314 * ((thetaminus(k, xi, z) - thetaplus(k, xi, z))) / 4; }
 
 inline double K12(double k, double xi, double z) {
-    return PI314
-            * ((thetaplus(k, xi, z) - thetaminus(k, xi, z)) / (16 * xi * xi)
-                    + (thetaminus(k, xi, z) + thetaplus(k, xi, z)) * z / (8 * k));
+    return PI314 * ((thetaplus(k, xi, z) - thetaminus(k, xi, z)) / (16 * xi * xi) +
+                    (thetaminus(k, xi, z) + thetaplus(k, xi, z)) * z / (8 * k));
 }
 
 inline void QI(const Eigen::Vector3d &kvec, double xi, double z, Eigen::Matrix3d &QI) {
@@ -181,7 +165,7 @@ inline void GkernelEwald(const Eigen::Vector3d &rvecIn, Eigen::Matrix3d &Gsum) {
             }
             Qkk(kvec, xi, zmn, Qreal, Qimg);
             QI(kvec, xi, zmn, QImat);
-            wave = wave + (QImat + Qreal) * cos(kvec.dot(rhomn)) - (Qimg) * sin(kvec.dot(rhomn));
+            wave = wave + (QImat + Qreal) * cos(kvec.dot(rhomn)) - (Qimg)*sin(kvec.dot(rhomn));
         }
     }
     wave *= 4;
@@ -195,8 +179,8 @@ inline void GkernelEwald(const Eigen::Vector3d &rvecIn, Eigen::Matrix3d &Gsum) {
      wavek0=-(4/1)*(np.pi*(zmn)*ss.erf(zmn*xi)+np.sqrt(np.pi)/(2*xi)*np.exp(-zmn**2*xi**2))*I2fn
      *
      * */
-    waveK0 = -(4 / 1.0) * (PI314 * (zmn) * ERF(zmn * xi) + sqrt(PI314) / (2 * xi) * exp(-zmn * zmn * xi * xi))
-            * Eigen::Matrix3d::Identity();
+    waveK0 = -(4 / 1.0) * (PI314 * (zmn)*ERF(zmn * xi) + sqrt(PI314) / (2 * xi) * exp(-zmn * zmn * xi * xi)) *
+             Eigen::Matrix3d::Identity();
     waveK0(2, 2) = 0;
 
     Gsum = real + wave + waveK0;
@@ -237,7 +221,7 @@ inline void GkernelEwaldO1(const Eigen::Vector3d &rvec, Eigen::Matrix3d &GsumO1)
  * format [x0 y0 z0 x1 y1 z1 .... ].
  */
 
-template<class Real_t>
+template <class Real_t>
 std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     size_t n_ = (6 * (p - 1) * (p - 1) + 2); // Total number of points.
 
@@ -278,26 +262,30 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     return coord;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     Eigen::initParallel();
     Eigen::setNbThreads(1);
     const int pEquiv = atoi(argv[1]); // (8-1)^2*6 + 2 points
     const int pCheck = atoi(argv[1]);
     const double scaleEquiv = 1.05;
     const double scaleCheck = 2.95;
-    const double pCenterEquiv[3] = { -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2 };
-    const double pCenterCheck[3] = { -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2 };
+    const double pCenterEquiv[3] = {-(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2};
+    const double pCenterCheck[3] = {-(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2};
 
     const double scaleLEquiv = 1.05;
     const double scaleLCheck = 2.95;
-    const double pCenterLEquiv[3] = { -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2 };
-    const double pCenterLCheck[3] = { -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2 };
+    const double pCenterLEquiv[3] = {-(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2};
+    const double pCenterLCheck[3] = {-(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2};
 
-    auto pointMEquiv = surface(pEquiv, (double *) &(pCenterEquiv[0]), scaleEquiv, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointMCheck = surface(pCheck, (double *) &(pCenterCheck[0]), scaleCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointMEquiv = surface(pEquiv, (double *)&(pCenterEquiv[0]), scaleEquiv,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointMCheck = surface(pCheck, (double *)&(pCenterCheck[0]), scaleCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
-    auto pointLEquiv = surface(pEquiv, (double *) &(pCenterLCheck[0]), scaleLCheck, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointLCheck = surface(pCheck, (double *) &(pCenterLEquiv[0]), scaleLEquiv, 0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLEquiv = surface(pEquiv, (double *)&(pCenterLCheck[0]), scaleLCheck,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLCheck = surface(pCheck, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
+                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
     //	for (int i = 0; i < pointLEquiv.size() / 3; i++) {
     //		std::cout << pointLEquiv[3 * i] << " " << pointLEquiv[3 * i + 1] <<
