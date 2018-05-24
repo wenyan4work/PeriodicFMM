@@ -73,7 +73,7 @@ std::vector<Real_t> surface(int p, Real_t* c, Real_t alpha, int depth) {
     return coord;
 }
 
-double directSum(const EVec3 & target, const EVec3 & source, const int directTerm = 100000) {
+double directSum(const EVec3 & target, const EVec3 & source, const int directTerm = 1000000) {
     // use asymptotic
     const double A = (target - source).dot(target - source);
     const double c = fabs(target[2] - source[2]);
@@ -88,12 +88,12 @@ double directSum(const EVec3 & target, const EVec3 & source, const int directTer
     return potentialDirect;
 }
 
-int main() {
+int main(int argc, char** argv) {
     Eigen::initParallel();
     Eigen::setNbThreads(1);
 
-    const int pEquiv = 10; // (8-1)^2*6 + 2 points
-    const int pCheck = 10;
+    const int pEquiv = atoi(argv[1]); // (8-1)^2*6 + 2 points
+    const int pCheck = atoi(argv[1]);
     const double scaleEquiv = 1.05;
     const double scaleCheck = 2.95;
     const double pCenterEquiv[3] = { -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2 };

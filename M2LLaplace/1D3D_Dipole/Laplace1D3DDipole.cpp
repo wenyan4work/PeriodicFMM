@@ -35,7 +35,7 @@ inline EVec3 gKernel(const EVec3 &target, const EVec3 &source) {
 inline EVec3 gKernelPBC(const EVec3 &target, const EVec3 &source) {
 
     EVec3 gvec = gKernel(target, source);
-    for (int i = 1; i < 100000; i++) {
+    for (int i = 1; i < 1000000; i++) {
         gvec += (gKernel(target, source + EVec3(i, 0, 0)) + gKernel(target, source + EVec3(-i, 0, 0)));
     }
     return gvec;
