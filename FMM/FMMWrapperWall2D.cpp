@@ -87,6 +87,9 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
     case PAXIS::NONE:
         pvfmm::periodicType = pvfmm::PeriodicType::NONE;
         break;
+    case PAXIS::PX:
+        pvfmm::periodicType = pvfmm::PeriodicType::PX;
+        break;
     case PAXIS::PXY:
         pvfmm::periodicType = pvfmm::PeriodicType::PXY;
         break;
@@ -100,6 +103,43 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
         if (mult_order != (mult_order / 2) * 2 || mult_order < 6 || mult_order > 16) {
             printf("periodic M2L data available only for p=6,8,10,12,14,16\n");
             exit(1);
+        } else if (pbc == PAXIS::PX) {
+            switch (mult_order) {
+            case 6:
+                pm2lStokes = readM2LMat("M2LStokes1D3Dp6", 6, 3);
+                pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp6", 6, 1);
+                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp6", 6, 3);
+                break;
+            case 8:
+                pm2lStokes = readM2LMat("M2LStokes1D3Dp8", 8, 3);
+                pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp8", 8, 1);
+                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp8", 8, 3);
+                break;
+            case 10:
+                pm2lStokes = readM2LMat("M2LStokes1D3Dp10", 10, 3);
+                pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp10", 10, 1);
+                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp10", 10, 3);
+                break;
+            case 12:
+                pm2lStokes = readM2LMat("M2LStokes1D3Dp12", 12, 3);
+                pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp12", 12, 1);
+                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp12", 12, 3);
+                break;
+            case 14:
+                pm2lStokes = readM2LMat("M2LStokes1D3Dp14", 14, 3);
+                pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp14", 14, 1);
+                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp14", 14, 3);
+                break;
+            case 16:
+                pm2lStokes = readM2LMat("M2LStokes1D3Dp16", 16, 3);
+                pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp16", 16, 1);
+                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp16", 16, 3);
+                break;
+            default:
+                printf("no m2l data at corresponding p, exit now\n");
+                exit(1);
+                break;
+            }
         } else if (pbc == PAXIS::PXY) {
             switch (mult_order) {
             case 6:
@@ -146,8 +186,8 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
         this->pCenterLEquiv[1] = -(scaleLEquiv - 1) / 2;
         this->pCenterLEquiv[2] = -(scaleLEquiv - 1) / 2;
 
-        pointLEquiv = surface(pEquiv, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
-                              0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+        pointLEquiv = surface(pEquiv, (double *)&(pCenterLEquiv[0]), scaleLEquiv, 0);
+        // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
         equivN = 6 * (pEquiv - 1) * (pEquiv - 1) + 2;
     }
@@ -200,6 +240,15 @@ void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, do
             printf("z axis height too large\n");
             exit(1);
         }
+    } else if (this->pbc == PAXIS::PX) {
+        if (yhigh - ylow > xhigh - xlow) {
+            printf("periodic in x direction. box size in y must be smaller than box size in x");
+            exit(1);
+        }
+        if (zlen >= 0.5 * xlen || zlen >= 0.5 * ylen) {
+            printf("z axis height too large\n");
+            exit(1);
+        }
     } else if (this->pbc == PAXIS::PXY) {
         if (xhigh - xlow != yhigh - ylow) {
             printf("x and y length must be identical for doubly periodic systems\n");
@@ -241,7 +290,24 @@ void FMM_WrapperWall2D::treeSetup(pvfmm::PtFMM_Data &treeData, const std::vector
         treeData.src_coord.Resize(nsrc * 3); // image only
     }
 
-    if (pbc == PAXIS::PXY) {
+    if (pbc == PAXIS::PX) {
+// original
+#pragma omp parallel for
+        for (size_t i = 0; i < nsrc; i++) {
+            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
+            treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
+        }
+        if (withOriginal) {
+// image
+#pragma omp parallel for
+            for (size_t i = nsrc; i < nsrc * 2; i++) {
+                treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
+                treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
+                treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
+            }
+        }
+    } else if (pbc == PAXIS::PXY) {
 // original
 #pragma omp parallel for
         for (size_t i = 0; i < nsrc; i++) {
@@ -295,8 +361,16 @@ void FMM_WrapperWall2D::treeSetup(pvfmm::PtFMM_Data &treeData, const std::vector
     const int ntrg = trg_coord.size() / 3;
     treeData.trg_coord.Resize(ntrg * 3);
     // image target values not needed
+    if (pbc == PAXIS::PX) {
+// original
+#pragma omp parallel for
+        for (size_t i = 0; i < ntrg; i++) {
+            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
+        }
 
-    if (pbc == PAXIS::PXY) {
+    } else if (pbc == PAXIS::PXY) {
 // original
 #pragma omp parallel for
         for (size_t i = 0; i < ntrg; i++) {
