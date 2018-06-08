@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
     //				<< std::endl;
     //	}
 
-    const int imageN = 1000; // images to sum
+    const int imageN = 500000; // images to sum
     // calculate the operator M2L with least square
     const int equivN = pointMEquiv.size() / 3;
     const int checkN = pointLCheck.size() / 3;
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
             //			std::cout<<"debug:"<<k<<std::endl;
             // sum the images
             for (int per = DIRECTLAYER + 1; per < imageN; per++) {
-                Eigen::Vector3d perVec(0, 0, 1.0 * per);
+                Eigen::Vector3d perVec(1.0 * per, 0, 0);
                 Eigen::Matrix3d G1 = Eigen::Matrix3d::Zero();
                 Eigen::Matrix3d G2 = Eigen::Matrix3d::Zero();
                 Gkernel(Cpoint, Mpoint + perVec, G1);
@@ -220,7 +220,7 @@ int main(int argc, char **argv) {
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> forceValueExt(0);
     for (int p = 0; p < forcePoint.size(); p++) {
         for (int k = -DIRECTLAYER; k < DIRECTLAYER + 1; k++) {
-            forcePointExt.push_back(Eigen::Vector3d(0, 0, k) + forcePoint[p]);
+            forcePointExt.push_back(Eigen::Vector3d(k, 0, 0) + forcePoint[p]);
             forceValueExt.push_back(forceValue[p]);
         }
     }
@@ -251,7 +251,7 @@ int main(int argc, char **argv) {
         Eigen::Matrix3d G1 = Eigen::Matrix3d::Zero();
         Eigen::Matrix3d G2 = Eigen::Matrix3d::Zero();
         for (int per = DIRECTLAYER + 1; per < imageN; per++) {
-            Eigen::Vector3d perVec(0, 0, 1.0 * per);
+            Eigen::Vector3d perVec(1.0 * per, 0, 0);
             Gkernel(samplePoint, forcePoint[p] + perVec, G1);
             Gkernel(samplePoint, forcePoint[p] - perVec, G2);
             UsampleN += (G1 + G2) * (forceValue[p]);

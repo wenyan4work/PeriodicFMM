@@ -35,7 +35,7 @@ inline EVec3 gKernel(const EVec3 &target, const EVec3 &source) {
 inline EVec3 gKernelPBC(const EVec3 &target, const EVec3 &source) {
 
     EVec3 gvec = gKernel(target, source);
-    for (int i = 1; i < 1000000; i++) {
+    for (int i = 1; i < 500000; i++) {
         gvec += (gKernel(target, source + EVec3(i, 0, 0)) + gKernel(target, source + EVec3(-i, 0, 0)));
     }
     return gvec;
@@ -43,12 +43,11 @@ inline EVec3 gKernelPBC(const EVec3 &target, const EVec3 &source) {
 
 // Out of Direct Sum Layer, far field part
 inline EVec3 gKernelFF(const EVec3 &target, const EVec3 &source) {
-    EVec3 fPBC = gKernelPBC(target, source);
+    EVec3 fPBC(0, 0, 0);
     const int N = DIRECTLAYER;
     const double L3 = 1.0;
-    for (int i = -N; i < N + 1; i++) {
-        EVec3 gFree = gKernel(target, source - EVec3(i, 0, 0));
-        fPBC -= gFree;
+    for (int t = DIRECTLAYER + 1; t < 500000; t++) {
+        fPBC += gKernel(target, source + EVec3(t * L3, 0, 0)) + gKernel(target, source - EVec3(t * L3, 0, 0));
     }
 
     return fPBC;

@@ -74,16 +74,15 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     return coord;
 }
 
-double directSum(const EVec3 &target, const EVec3 &source, const int directTerm = 1000000) {
+double directSum(const EVec3 &target, const EVec3 &source, const int directTerm = 500000) {
     // use asymptotic
     const double A = (target - source).dot(target - source);
     const double c = fabs(target[2] - source[2]);
     const double L3 = 1.0;
     double potentialDirect = 0;
     for (int t = DIRECTLAYER + 1; t < directTerm; t++) {
-        // 100000 gives Madelung to 1e-8
         potentialDirect +=
-            gKernel(target, source + EVec3(0, 0, t * L3)) + gKernel(target, source - EVec3(0, 0, t * L3));
+            gKernel(target, source + EVec3(t * L3, 0, 0)) + gKernel(target, source - EVec3(t * L3, 0, 0));
     }
 
     return potentialDirect;
@@ -159,13 +158,13 @@ int main(int argc, char **argv) {
 
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> chargePoint(4);
     std::vector<double> chargeValue(4);
-    chargePoint[0] = Eigen::Vector3d(0.5, 0.5, 0.125);
+    chargePoint[0] = Eigen::Vector3d(0.125, 0.5, 0.5);
     chargeValue[0] = 1;
-    chargePoint[1] = Eigen::Vector3d(0.5, 0.5, 0.375);
+    chargePoint[1] = Eigen::Vector3d(0.375, 0.5, 0.5);
     chargeValue[1] = -1;
-    chargePoint[2] = Eigen::Vector3d(0.5, 0.5, 0.625);
+    chargePoint[2] = Eigen::Vector3d(0.625, 0.5, 0.5);
     chargeValue[2] = 1;
-    chargePoint[3] = Eigen::Vector3d(0.5, 0.5, 0.875);
+    chargePoint[3] = Eigen::Vector3d(0.875, 0.5, 0.5);
     chargeValue[3] = -1;
 
     // solve M
@@ -205,13 +204,13 @@ int main(int argc, char **argv) {
 
     Eigen::VectorXd M2Lsource = M2L * (Msource);
 
-    Eigen::Vector3d samplePoint(0.5, 0.5, 0.125);
+    Eigen::Vector3d samplePoint(0.125, 0.5, 0.5);
     double Usample = 0;
     double UsampleSP = 0;
 
     for (int k = -DIRECTLAYER; k < 1 + DIRECTLAYER; k++) {
         for (int p = 0; p < chargePoint.size(); p++) {
-            Usample += gKernel(samplePoint, chargePoint[p] + EVec3(0, 0, k)) * chargeValue[p];
+            Usample += gKernel(samplePoint, chargePoint[p] + EVec3(k, 0, 0)) * chargeValue[p];
         }
     }
 
@@ -226,13 +225,13 @@ int main(int argc, char **argv) {
     std::cout << "Usample FF+NF total:" << UsampleSP + Usample << std::endl;
     std::cout << "error:" << UsampleSP + Usample + 8 * log(2) << std::endl;
 
-    samplePoint = EVec3(0.5, 0.5, 0.625);
+    samplePoint = EVec3(0.625, 0.5, 0.5);
     Usample = 0;
     UsampleSP = 0;
 
     for (int k = -DIRECTLAYER; k < 1 + DIRECTLAYER; k++) {
         for (int p = 0; p < chargePoint.size(); p++) {
-            Usample += gKernel(samplePoint, chargePoint[p] + EVec3(0, 0, k)) * chargeValue[p];
+            Usample += gKernel(samplePoint, chargePoint[p] + EVec3(k, 0, 0)) * chargeValue[p];
         }
     }
 
