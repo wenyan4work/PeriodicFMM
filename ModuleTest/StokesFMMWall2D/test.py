@@ -11,6 +11,7 @@ ompstep = 4
 
 
 def test(mpi=1, omp=1, intel=1):
+
     os.environ['OMP_NUM_THREADS'] = str(omp)
     os.environ['MKL_NUM_THREADS'] = str(intel)
     print('export OMP_NUM_THREADS='+str(int(omp)))
@@ -18,22 +19,17 @@ def test(mpi=1, omp=1, intel=1):
 
     # intel iomp5 must source compilervars.sh intel64 to work properly
     cmd = 'mpiexec -n ' + \
-        str(mpi)+' ./TestStokesWall2D.X -S 2 -T 32 -P 0 -R 0'
+        str(mpi)+' ./TestStokesWall2D.X -S 1 -T 32 -P 0 -R 1'
     print(cmd)
     os.system(cmd)
 
     cmd = 'mpiexec -n ' + \
-        str(mpi)+' ./TestStokesWall2D.X -S 2 -T 32 -P 1 -R 0'
+        str(mpi)+' ./TestStokesWall2D.X -S 1 -T 32 -P 1 -R 1'
     print(cmd)
     os.system(cmd)
 
     cmd = 'mpiexec -n ' + \
-        str(mpi)+' ./TestStokesWall2D.X -S 2 -T 32 -P 4 -R 0'
-    print(cmd)
-    os.system(cmd)
-
-    cmd = 'mpiexec -n ' + \
-        str(mpi)+' ./TestStokesWall2D.X -S 2 -T 32 -P 7 -R 0'
+        str(mpi)+' ./TestStokesWall2D.X -S 1 -T 32 -P 4 -R 1'
     print(cmd)
     os.system(cmd)
 
