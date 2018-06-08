@@ -12,11 +12,11 @@
 
 #include <chrono>
 #include <iostream>
-#include <mpi.h>
 #include <random>
 #include <vector>
 
 #include <Eigen/Dense>
+#include <mpi.h>
 
 void distributePts(std::vector<double> &pts) {
     int myRank;

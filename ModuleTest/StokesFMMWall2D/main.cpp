@@ -185,6 +185,9 @@ void initPtsTrgWall(std::vector<double> &trg_coord, std::vector<double> &trg_val
     case 0:
         pset = FMM_WrapperWall2D::PAXIS::NONE;
         break;
+    case 1:
+        pset = FMM_WrapperWall2D::PAXIS::PX;
+        break;
     case 4:
         pset = FMM_WrapperWall2D::PAXIS::PXY;
         break;
@@ -260,6 +263,9 @@ void initPtsTrgPBC(std::vector<double> &trg_coord, std::vector<double> &trg_valu
     switch (pinput) {
     case 0:
         pset = FMM_WrapperWall2D::PAXIS::NONE;
+        break;
+    case 1:
+        pset = FMM_WrapperWall2D::PAXIS::PX;
         break;
     case 4:
         pset = FMM_WrapperWall2D::PAXIS::PXY;
@@ -386,6 +392,9 @@ void initPtsTrgSample(std::vector<double> &trg_coord, std::vector<double> &trg_v
     switch (pinput) {
     case 0:
         pset = FMM_WrapperWall2D::PAXIS::NONE;
+        break;
+    case 1:
+        pset = FMM_WrapperWall2D::PAXIS::PX;
         break;
     case 4:
         pset = FMM_WrapperWall2D::PAXIS::PXY;
@@ -621,6 +630,9 @@ void checkErrorPBC(std::vector<double> &trgValuePBC, std::vector<double> &trgCoo
     printf("RMS Error L2: %g\n", sqrt(errorL2 / (3 * nptsWall)));
     printf("Relative Error L2: %g\n", sqrt(errorL2 / L2));
 
+    errorL2 = errorAbs = L2 = errorMaxL2 = maxU = 0;
+    errorMaxRel = 0;
+
     // check x PBC
     for (int i = 0; i < 3 * nptsWall; i++) {
         double temp = pow(trgValuePBC[i + 6 * nptsWall] - trgValuePBC[i + 9 * nptsWall], 2);
@@ -690,7 +702,7 @@ void configure_parser(cli::Parser &parser) {
     parser.set_optional<double>("M", "move", 0.0, "box origin shift move");
     parser.set_optional<int>("S", "source", 1,
                              "1 for point force, 2 for force dipole, 4 for quadrupole, other for same as target.");
-    parser.set_optional<double>("Z", "zratio", 0.5, "ratio of z length to box edge length");
+    parser.set_optional<double>("Z", "zratio", 0.499, "ratio of z length to box edge length");
 
     parser.set_optional<int>("R", "randomsource", 1, "1 for random points, 0 for chebyshev mesh");
     parser.set_optional<int>("C", "randomtarget", 1, "1 for random points, 0 for chebyshev mesh");
@@ -798,6 +810,9 @@ int main(int argc, char **argv) {
     switch (pinput) {
     case 0:
         pset = FMM_WrapperWall2D::PAXIS::NONE;
+        break;
+    case 1:
+        pset = FMM_WrapperWall2D::PAXIS::PX;
         break;
     case 4:
         pset = FMM_WrapperWall2D::PAXIS::PXY;
