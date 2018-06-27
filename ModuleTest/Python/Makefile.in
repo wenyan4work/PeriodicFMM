@@ -1,0 +1,56 @@
+#
+# Compile with gcc-4.8.5? That was for visit
+#
+
+# location of the Python header files
+PYTHON_VERSION = 3.6m
+PYTHON_DIR = /mnt/home/fbalboausabiaga/.miniconda3
+# PYTHON_INCLUDE = $(PYTHON_DIR)/include/python$(PYTHON_VERSION)m/
+# PYTHON_LIB = $(PYTHON_DIR)/lib/python$(PYTHON_VERSION)/config-3.6m-x86_64-linux-gnu/
+# PYTHON_INCLUDE = $(PYTHON_DIR)/envs/py2.7/include/python$(PYTHON_VERSION)/
+# PYTHON_LIB = $(PYTHON_DIR)/envs/py2.7/lib/python$(PYTHON_VERSION)/config/
+PYTHON_INCLUDE = $(PYTHON_DIR)/envs/py3.6-exp/include/python$(PYTHON_VERSION)/
+PYTHON_LIB = $(PYTHON_DIR)/envs/py3.6-exp/lib/python$(PYTHON_VERSION)/config/
+
+# location of the Boost Python include files and library
+# BOOST_INC = /usr/include/boost
+# BOOST_LIB = /usr/lib64
+BOOST_INC = /mnt/home/fbalboausabiaga/.miniconda3/envs/py3.6-exp/include/boost
+BOOST_LIB = /mnt/home/fbalboausabiaga/.miniconda3/envs/py3.6-exp/lib
+
+# Define includes
+INCLUDE_DIRS = -I$(PYTHON_INCLUDE) -I$(BOOST_INC)
+
+CXX = g++
+CXXFLAGS += -fPIC 
+
+# -lpython$(PYTHON_VERSION) 
+# -lpython3.6m
+LINK := g++
+LINKFLAGS := $(LINKFLAGS) -Wl,--no-undefined -L$(BOOST_LIB) -L$(PYTHON_LIB) -shared -dynamiclib -lboost_python -lpython$(PYTHON_VERSION) -lboost_numpy
+
+# compile mesh classes
+TARGET = periodic_fmm
+
+SRC = ../../FMM/FMMWrapper-py.cpp
+
+# $(TARGET).so: $(TARGET).o
+#	g++ -shared  -dynamiclib $(TARGET).o -L$(BOOST_LIB)  -lboost_python -L$(PYTHON_LIB) -lpython$(PYTHON_VERSION) -o $(TARGET).so
+#	g++ -shared  -dynamiclib $(TARGET).o -L$(BOOST_LIB)  -lboost_python -L$(PYTHON_LIB) -lpython$(PYTHON_VERSION) -o $(TARGET).so
+
+# $(TARGET).o: $(TARGET).cc
+#	g++ -I$(PYTHON_INCLUDE) -I$(BOOST_INC) -fPIC -c $(TARGET).cc
+#	g++ -I$(PYTHON_INCLUDE) -I$(BOOST_INC) -fPIC -c visit_writer.c
+
+# Link rule
+$(TARGET).so: ../../Interface/FMMWrapper-py.o
+	$(CXX) $(LINKFLAGS) ../../Interface/FMMWrapper-py.o -o $(TARGET).so  
+
+# Compilation rules
+../../Interface/FMMWrapper-py.o: ../../Interface/FMMWrapper-py.cpp
+	$(CXX) $(INCLUDE_DIRS) $(CXXFLAGS)  -c ../../Interface/FMMWrapper-py.cpp -o ../../Interface/FMMWrapper-py.o
+
+
+clean: 
+	rm -f ../../Interface/FMMWrapper-py.o $(TARGET).so
+
