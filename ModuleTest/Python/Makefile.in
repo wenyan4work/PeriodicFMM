@@ -1,33 +1,23 @@
-#
-# Compile with gcc-4.8.5? That was for visit
-#
+include ../../MakefileInc.mk
 
 # location of the Python header files
 PYTHON_VERSION = 3.6m
 PYTHON_DIR = /mnt/home/fbalboausabiaga/.miniconda3
-# PYTHON_INCLUDE = $(PYTHON_DIR)/include/python$(PYTHON_VERSION)m/
-# PYTHON_LIB = $(PYTHON_DIR)/lib/python$(PYTHON_VERSION)/config-3.6m-x86_64-linux-gnu/
-# PYTHON_INCLUDE = $(PYTHON_DIR)/envs/py2.7/include/python$(PYTHON_VERSION)/
-# PYTHON_LIB = $(PYTHON_DIR)/envs/py2.7/lib/python$(PYTHON_VERSION)/config/
 PYTHON_INCLUDE = $(PYTHON_DIR)/envs/py3.6-exp/include/python$(PYTHON_VERSION)/
 PYTHON_LIB = $(PYTHON_DIR)/envs/py3.6-exp/lib/python$(PYTHON_VERSION)/config/
 
 # location of the Boost Python include files and library
-# BOOST_INC = /usr/include/boost
-# BOOST_LIB = /usr/lib64
-BOOST_INC = /mnt/home/fbalboausabiaga/.miniconda3/envs/py3.6-exp/include/boost
+BOOST_INC = /mnt/home/fbalboausabiaga/.miniconda3/envs/py3.6-exp/include
 BOOST_LIB = /mnt/home/fbalboausabiaga/.miniconda3/envs/py3.6-exp/lib
 
 # Define includes
-INCLUDE_DIRS = -I$(PYTHON_INCLUDE) -I$(BOOST_INC)
+INCLUDE_DIRS = -I../../ -I$(PYTHON_INCLUDE) -I$(BOOST_INC)
 
-CXX = g++
+CXX = mpiicpc
 CXXFLAGS += -fPIC 
 
-# -lpython$(PYTHON_VERSION) 
-# -lpython3.6m
-LINK := g++
-LINKFLAGS := $(LINKFLAGS) -Wl,--no-undefined -L$(BOOST_LIB) -L$(PYTHON_LIB) -shared -dynamiclib -lboost_python -lpython$(PYTHON_VERSION) -lboost_numpy
+LINK := mpiicpc
+LINKFLAGS := $(LINKFLAGS) -Wl,--no-undefined -L$(BOOST_LIB) -L$(PYTHON_LIB) -shared  -lboost_python -lpython$(PYTHON_VERSION) -lboost_numpy
 
 # Target and source
 TARGET = periodic_fmm
