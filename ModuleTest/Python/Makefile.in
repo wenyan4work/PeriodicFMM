@@ -4,7 +4,8 @@ include ../../MakefileInc.mk
 PYTHON_VERSION = 3.6m
 PYTHON_DIR = /mnt/home/fbalboausabiaga/.miniconda3
 PYTHON_INCLUDE = $(PYTHON_DIR)/envs/py3.6-exp/include/python$(PYTHON_VERSION)/
-PYTHON_LIB = $(PYTHON_DIR)/envs/py3.6-exp/lib/python$(PYTHON_VERSION)/config/
+PYTHON_LIB = $(PYTHON_DIR)/envs/py3.6-exp/lib/
+
 
 # location of the Boost Python include files and library
 BOOST_INC = /mnt/home/fbalboausabiaga/.miniconda3/envs/py3.6-exp/include
@@ -17,9 +18,9 @@ CXX = mpiicpc
 CXXFLAGS += -fPIC 
 
 LINK := mpiicpc
-LINKFLAGS := $(LINKFLAGS) -Wl,--no-undefined -L$(BOOST_LIB) -L$(PYTHON_LIB) -shared  -lboost_python -lpython$(PYTHON_VERSION) -lboost_numpy
+LINKFLAGS := $(LINKFLAGS) -Wl,--no-undefined -Wl,-rpath=$(BOOST_LIB) -shared -L$(BOOST_LIB)  -lboost_python -lboost_numpy -L$(PYTHON_LIB) -lpython$(PYTHON_VERSION) 
 
-# Target and source
+# Target and sources
 TARGET = periodic_fmm
 SRC = ../../FMM/FMMWrapper-py.cpp
 
