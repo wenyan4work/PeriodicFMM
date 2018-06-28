@@ -22,18 +22,21 @@ LINKFLAGS := $(LINKFLAGS) -Wl,--no-undefined -Wl,-rpath=$(BOOST_LIB) -shared -L$
 
 # Target and sources
 TARGET = periodic_fmm
-SRC = ../../FMM/FMMWrapper-py.cpp
-
+SRC = ../../Interface/FMMWrapper-py.cpp ../../FMM/FMMWrapper.cpp ../../FMM/MiniFMM.cpp
+OBJ = ../../Interface/FMMWrapper-py.o ../../FMM/FMMWrapper.o ../../FMM/MiniFMM.o
 
 # Link rule
-$(TARGET).so: ../../Interface/FMMWrapper-py.o
-	$(CXX) ../../Interface/FMMWrapper-py.o $(LINKFLAGS) -o $(TARGET).so  
+$(TARGET).so: $(OBJ)
+	$(LINK) $(OBJ) $(LINKFLAGS) -o $(TARGET).so  
 
-# Compilation rules
-../../Interface/FMMWrapper-py.o: ../../Interface/FMMWrapper-py.cpp
-	$(CXX) $(INCLUDE_DIRS) $(CXXFLAGS)  -c ../../Interface/FMMWrapper-py.cpp -o ../../Interface/FMMWrapper-py.o
+.cpp.o:
+	$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $*.cpp -o $*.o
+
+# Individual dependencies
+$(OBJ): $(INC)
 
 
 clean: 
-	rm -f ../../Interface/FMMWrapper-py.o $(TARGET).so
+	rm -f $(OBJ)
+	rm -f $(TARGET).so
 
