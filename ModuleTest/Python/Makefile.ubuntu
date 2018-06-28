@@ -1,4 +1,4 @@
-# include ../../MakefileInc.mk
+include ../../MakefileInc.mk
 
 # location of the Python header files
 PYTHON_VERSION = 3.6
@@ -17,14 +17,14 @@ BOOST_INC = /home/fbalboausabiaga/.anaconda3/envs/py3.6-exp/include
 BOOST_LIB = /home/fbalboausabiaga/.anaconda3/envs/py3.6-exp/lib
 
 # Define includes
-INCLUDE_DIRS =  -I$(PYTHON_INCLUDE) -I$(BOOST_INC)
+INCLUDE_DIRS = -I../../ -I$(PYTHON_INCLUDE) -I$(BOOST_INC)
 
-CXX = g++
+CXX = mpic++
 CXXFLAGS += -fPIC 
 
 # -lpython$(PYTHON_VERSION) 
 # -lpython3.6m
-LINK := g++
+LINK := mpic++
 LINKFLAGS := $(LINKFLAGS) -Wl,--no-undefined -shared -dynamiclib -L$(BOOST_LIB) -lboost_python -lboost_numpy -lpython3.6m 
 
 # compile mesh classes
