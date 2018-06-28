@@ -12,43 +12,43 @@ import periodic_fmm as fmm
 
 if __name__ == '__main__':
     print('# Start')
+
+    # FMM parameters
+    mult_order = 10
+    max_pts = 1024
+    init_depth = 0
+    pbc = fmm.PAXIS.NONE
+
+    # Create sources and targets
+    nsrc = 10
+    src_coord = np.random.randn(nsrc, 3)
     ntrg = 10
     trg_coord = np.random.randn(ntrg, 3)
+    
+    # Set box dimensions
+    box = np.zeros((2,3))
+    box[0,0] = np.minimum(src_coord[:,0].min(), trg_coord[:,0].min())
+    box[1,0] = np.maximum(src_coord[:,0].max(), trg_coord[:,0].max())
 
+    box[1,0] = np.minimum(src_coord[:,1].min(), trg_coord[:,1].min())
+    box[1,1] = np.maximum(src_coord[:,1].max(), trg_coord[:,1].max())
 
-    if True:
-        # Try basic function
-        print('\n\n')
-        fmm.FMM(trg_coord)
-        
-    if True:
-        # Try Mini_FMM
-        print('\n\n')
-        print('xxx = ', fmm.Mini_PAXIS.PX)
-        Mini_FMM = fmm.Mini_FMM(10, fmm.Mini_PAXIS.NONE)
-        Mini_FMM.saludo()
+    box[0,2] = np.minimum(src_coord[:,2].min(), trg_coord[:,2].min())
+    box[1,2] = np.maximum(src_coord[:,2].max(), trg_coord[:,2].max())
 
-    if False:
-        # Test MPI
-        print('\n\n')
-        comm = MPI.COMM_WORLD
-        nprocs = comm.Get_size()
-        rank   = comm.Get_rank()
+    # Try FMM_Wrapper
+    myFMM = fmm.FMM_Wrapper(mult_order, max_pts, init_depth, pbc)
 
-        if rank == 0:
-            print('rank = ', rank)
-            data = 'Hello!'
-            comm.send(data, dest=nprocs-1, tag=1)
-        elif rank == nprocs-1:
-            data = comm.recv(source=0, tag=1)
-            print('rank ', rank, ' received ', data)
+    myFMM.FMM_SetBox(box[0,0], box[1,0], box[0,1], box[1,1], box[0,2], box[1,2])
+    fmm.FMM_UpdateTree(myFMM, trg_coord, src_coord)
+    # myFMM.FMM_UpdateTree(trg_coord, src_coord);
+    # FMM_Evaluate(fmm, trgValue, srcValue, ntrg, nsrc);
+    # FMM_DataClear(fmm);
+    # FMM_Evaluate(fmm, trgValue, srcValue, ntrg, nsrc);
 
-
-    if True:
-        # Try FMM_Wrapper
-        print('\n\n')
-        myFMM = fmm.FMM_Wrapper(10, 1024, 0, fmm.PAXIS.NONE)
-
+    print('Before end')
+    fmm.FMM_UpdateTree(myFMM, trg_coord, src_coord)
+    print('AAA')
 
 
     print('# End')
