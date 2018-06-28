@@ -1,17 +1,18 @@
 #include <boost/python.hpp>
+#include <boost/python/numpy.hpp>
 #include <stdio.h>
-#include <boost/python.hpp>
 #include <iostream>
 #include <math.h>
 #include <vector>
 
 
 namespace bp = boost::python;
+namespace np = boost::python::numpy;
 
 void FMM(){
-  std::cout << "Hello from C++" << std::endl;
-  
-  std::cout << "Goodbye from C++" << std::endl;
+
+  //std::cout << "Hello from C++" << std::endl;
+  //std::cout << "Goodbye from C++" << std::endl;
   return;
 }
 
@@ -21,6 +22,11 @@ void FMM(){
 BOOST_PYTHON_MODULE(periodic_fmm)
 {
   using namespace boost::python;
-  // boost::python::numeric::array::set_module_and_type("numpy", "ndarray");
+
+  // Initialize numpy
+  // Py_Initialize();
+  // np::initialize();
+
+  // Definitions
   def("FMM", FMM);
 }
