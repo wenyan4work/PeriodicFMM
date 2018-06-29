@@ -60,7 +60,7 @@ if __name__ == '__main__':
     fmm.FMM_Evaluate(myFMM, trg_value, src_value)
 
     # Try FMM_WrapperWall2D
-    pbc = fmm.FMM_Wall2D_PAXIS.NONE
+    pbc = fmm.FMMWall2D_PAXIS.NONE
     myFMM = fmm.FMM_WrapperWall2D(mult_order, max_pts, init_depth, pbc)
     fmm.FMMWall2D_SetBox(myFMM, box[0,0], box[1,0], box[0,1], box[1,1], box[0,2], box[1,2])
     fmm.FMMWall2D_UpdateTree(myFMM, trg_coord, src_coord)

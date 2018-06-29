@@ -127,7 +127,7 @@ BOOST_PYTHON_MODULE(periodic_fmm)
   class_<FMM_Wrapper>("FMM_Wrapper", init<int, int, int, FMM_Wrapper::PAXIS>());
 
   // Class FMM_WrapperWall2D
-  enum_<FMM_WrapperWall2D::PAXIS>("FMM_Wall2D_PAXIS")
+  enum_<FMM_WrapperWall2D::PAXIS>("FMMWall2D_PAXIS")
     .value("NONE", FMM_WrapperWall2D::NONE)
     .value("PX", FMM_WrapperWall2D::PX)
     .value("PXY", FMM_WrapperWall2D::PXY);
