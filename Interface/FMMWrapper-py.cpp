@@ -15,13 +15,12 @@ void FMM_UpdateTree(FMM_Wrapper* fmm, np::ndarray trg_coord, np::ndarray src_coo
 
   // Transform ndarray to std::vectors
   int ntrg = trg_coord.shape(0);
-  char* ctrg = trg_coord.get_data();
-  std::vector<double> vtrg(ctrg, ctrg + ntrg * 3);
- 
+  double * trg_iter = reinterpret_cast<double*>(trg_coord.get_data());
+  std::vector<double> vtrg(trg_iter, trg_iter + ntrg * 3);
   int nsrc = src_coord.shape(0);
-  char* csrc = src_coord.get_data();
-  std::vector<double> vsrc(csrc, csrc + nsrc * 3);
-
+  double * src_iter = reinterpret_cast<double*>(src_coord.get_data());
+  std::vector<double> vsrc(src_iter, src_iter + nsrc * 3);
+  
   // Call method
   fmm->FMM_UpdateTree(vsrc, vtrg);
 
