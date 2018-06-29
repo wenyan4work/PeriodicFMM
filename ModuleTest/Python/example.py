@@ -3,7 +3,6 @@ import numpy as np
 import sys
 try:
     from mpi4py import MPI
-    print('MPI imported')
 except ImportError:
     print('It didn\'t find mpi4py!')
 
@@ -18,6 +17,10 @@ if __name__ == '__main__':
     max_pts = 1024
     init_depth = 0
     pbc = fmm.FMM_PAXIS.NONE
+
+    # Get MPI parameters
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
 
     # Create sources and targets
     nsrc = 1
@@ -43,12 +46,10 @@ if __name__ == '__main__':
     M = np.maximum(src_coord[:,2].max(), trg_coord[:,2].max()) 
     box[0,2] = m - (M-m) * 0.1
     box[1,2] = M + (M-m) * 0.1
-
-    print(trg_coord)
-    print(src_coord)
+    sys.stdout.flush()
+    comm.Barrier()
 
     # Try FMM_Wrapper
-    print('\n\nTry FMM_Wrapper')
     myFMM = fmm.FMM_Wrapper(mult_order, max_pts, init_depth, pbc)
     fmm.FMM_SetBox(myFMM, box[0,0], box[1,0], box[0,1], box[1,1], box[0,2], box[1,2])
     fmm.FMM_UpdateTree(myFMM, trg_coord, src_coord)
@@ -59,7 +60,6 @@ if __name__ == '__main__':
     fmm.FMM_Evaluate(myFMM, trg_value, src_value)
 
     # Try FMM_WrapperWall2D
-    print('\n\nTry FMM_WrapperWall2D')
     pbc = fmm.FMM_Wall2D_PAXIS.NONE
     myFMM = fmm.FMM_WrapperWall2D(mult_order, max_pts, init_depth, pbc)
     fmm.FMMWall2D_SetBox(myFMM, box[0,0], box[1,0], box[0,1], box[1,1], box[0,2], box[1,2])
@@ -70,5 +70,6 @@ if __name__ == '__main__':
     fmm.FMMWall2D_UpdateTree(myFMM, trg_coord, src_coord)
     fmm.FMMWall2D_Evaluate(myFMM, trg_value, src_value)
 
+    comm.Barrier()
     print('# End')
 
