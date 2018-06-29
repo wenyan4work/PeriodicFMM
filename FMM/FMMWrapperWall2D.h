@@ -37,7 +37,9 @@ class FMM_WrapperWall2D {
     void FMM_SetBox(double, double, double, double, double, double);
 
   private:
+#ifdef FMMTIMING
     Timer myTimer;
+#endif
     double xlow, xhigh; // box
     double ylow, yhigh;
     double zlow, zhigh;

@@ -77,7 +77,7 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
 FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth, PAXIS pbc_)
     : mult_order(mult_order), max_pts(max_pts), init_depth(init_depth), pbc(pbc_), xlow(0), xhigh(1), ylow(0), yhigh(1),
       zlow(0), zhigh(1), scaleFactor(1), xshift(0), yshift(0), zshift(0)
-#ifndef FMMTIMING
+#ifdef FMMTIMING
       ,
       myTimer(false)
 #endif
@@ -437,21 +437,37 @@ void FMM_WrapperWall2D::FMM_UpdateTree(const std::vector<double> &src_coord, con
     if (myRank == 0)
         printf("tree deleted\n");
 
+#ifdef FMMTIMING
     myTimer.start();
+#endif
     treeStokes(src_coord, trg_coord);
+#ifdef FMMTIMING
     myTimer.stop("Stokes tree construction");
+#endif
 
+#ifdef FMMTIMING
     myTimer.start();
+#endif
     treeLapDipole(src_coord, trg_coord);
+#ifdef FMMTIMING
     myTimer.stop("Lap Dipole tree construction");
+#endif
 
+#ifdef FMMTIMING
     myTimer.start();
+#endif
     treeLapChargeF(src_coord, trg_coord);
+#ifdef FMMTIMING
     myTimer.stop("Lap Charge F tree construction");
+#endif
 
+#ifdef FMMTIMING
     myTimer.start();
+#endif
     treeLapChargeFZ(src_coord, trg_coord);
+#ifdef FMMTIMING
     myTimer.stop("Lap Charge FZ tree construction");
+#endif
 
     // printf("SetupFMM Complete\n");
 }
@@ -491,9 +507,13 @@ void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val, const int n_t
     printf("before pxyz: %f,%f,%f", trg_val[0], trg_val[1], trg_val[2]);
 #endif
 
+#ifdef FMMTIMING
     myTimer.start();
+#endif
     sumImageSystem(trg_val);
+#ifdef FMMTIMING
     myTimer.stop("FMM system summation");
+#endif
 
 #ifdef FMMTIMING
     myTimer.dump();
@@ -788,7 +808,9 @@ void FMM_WrapperWall2D::evalStokes(std::vector<double> &trg_val, const int n_trg
     const int ntrg = trg_val.size() / 3;
     // evaluate 1, Stokes FMM
     srcValueStokes.resize(3 * nsrc * 2);
+#ifdef FMMTIMING
     myTimer.start();
+#endif
 // original
 #pragma omp parallel for
     for (int i = 0; i < nsrc; i++) {
@@ -805,12 +827,16 @@ void FMM_WrapperWall2D::evalStokes(std::vector<double> &trg_val, const int n_trg
     }
     trgValueStokes.resize(ntrg * 3);
     PtFMM_Evaluate(treePtrStokes, trgValueStokes, ntrg, &srcValueStokes, nullptr);
+#ifdef FMMTIMING
     myTimer.stop("Stokes Near Field");
     myTimer.start();
+#endif
     if (pbc != NONE) {
         calcMStokes();
     }
+#ifdef FMMTIMING
     myTimer.stop("Stokes Far Field");
+#endif
 }
 
 void FMM_WrapperWall2D::evalLapDipole(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
@@ -818,7 +844,9 @@ void FMM_WrapperWall2D::evalLapDipole(std::vector<double> &trg_val, const int n_
     const int ntrg = trg_val.size() / 3;
     // evaluate 2, LaplaceDipole FMM
     srcValueLapDipole.resize(3 * nsrc);
+#ifdef FMMTIMING
     myTimer.start();
+#endif
 // orginal, no image needed for dipole term
 #pragma omp parallel for
     for (int i = 0; i < nsrc; i++) {
@@ -829,12 +857,16 @@ void FMM_WrapperWall2D::evalLapDipole(std::vector<double> &trg_val, const int n_
     }
     trgValueLapDipole.resize(ntrg * 4); // value + gradient
     PtFMM_Evaluate(treePtrLapDipole, trgValueLapDipole, ntrg, &srcValueLapDipole, nullptr);
+#ifdef FMMTIMING
     myTimer.stop("Lap Dipole Near Field");
     myTimer.start();
+#endif
     if (pbc != NONE) {
         calcMLapDipole();
     }
+#ifdef FMMTIMING
     myTimer.stop("Lap Dipole Far Field");
+#endif
     // treePtrLapDipole->ClearFMMData();
 }
 
@@ -843,7 +875,9 @@ void FMM_WrapperWall2D::evalLapChargeF(std::vector<double> &trg_val, const int n
     const int ntrg = trg_val.size() / 3;
     // evaluate 3, LaplaceCharge FMM
     srcValueLapChargeF.resize(nsrc * 2);
+#ifdef FMMTIMING
     myTimer.start();
+#endif
 // original
 #pragma omp parallel for
     for (int i = 0; i < nsrc; i++) {
@@ -856,12 +890,16 @@ void FMM_WrapperWall2D::evalLapChargeF(std::vector<double> &trg_val, const int n
     }
     trgValueLapChargeF.resize(ntrg * 4); // value + gradient
     PtFMM_Evaluate(treePtrLapChargeF, trgValueLapChargeF, ntrg, &srcValueLapChargeF, nullptr);
+#ifdef FMMTIMING
     myTimer.stop("Lap Charge F Near Field");
     myTimer.start();
+#endif
     if (pbc != NONE) {
         calcMLapCharge(0);
     }
+#ifdef FMMTIMING
     myTimer.stop("Lap Charge F Far Field");
+#endif
     // treePtrLapChargeF->ClearFMMData();
 }
 
@@ -870,7 +908,9 @@ void FMM_WrapperWall2D::evalLapChargeFZ(std::vector<double> &trg_val, const int 
     const int ntrg = trg_val.size() / 3;
     // evaluate 4, LaplaceCharge FMM
     srcValueLapChargeFZ.resize(nsrc * 2);
+#ifdef FMMTIMING
     myTimer.start();
+#endif
 // original
 #pragma omp parallel for
     for (int i = 0; i < nsrc; i++) {
@@ -884,12 +924,16 @@ void FMM_WrapperWall2D::evalLapChargeFZ(std::vector<double> &trg_val, const int 
     }
     trgValueLapChargeFZ.resize(ntrg * 4); // value + gradient
     PtFMM_Evaluate(treePtrLapChargeFZ, trgValueLapChargeFZ, ntrg, &srcValueLapChargeFZ, nullptr);
+#ifdef FMMTIMING
     myTimer.stop("Lap Charge FZ Near Field");
     myTimer.start();
+#endif
     if (pbc != NONE) {
         calcMLapCharge(1);
     }
+#ifdef FMMTIMING
     myTimer.stop("Lap Charge FZ Far Field");
+#endif
     // treePtrLapChargeFZ->ClearFMMData();
 }
 
