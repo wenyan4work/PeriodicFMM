@@ -6,7 +6,7 @@
  */
 
 #include "FMMWrapperWall2D.h"
-#include "LaplaceCustomKernel.hpp"
+#include "LaplaceLayerKernel.hpp"
 
 #include <cassert>
 #include <limits>
@@ -97,7 +97,6 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
 
     pm2lStokes = nullptr;
     pm2lLapCharge = nullptr;
-    pm2lLapDipole = nullptr;
 
     if (pbc != NONE) {
         if (mult_order != (mult_order / 2) * 2 || mult_order < 6 || mult_order > 16) {
@@ -108,32 +107,26 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
             case 6:
                 pm2lStokes = readM2LMat("M2LStokes1D3Dp6", 6, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp6", 6, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp6", 6, 3);
                 break;
             case 8:
                 pm2lStokes = readM2LMat("M2LStokes1D3Dp8", 8, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp8", 8, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp8", 8, 3);
                 break;
             case 10:
                 pm2lStokes = readM2LMat("M2LStokes1D3Dp10", 10, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp10", 10, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp10", 10, 3);
                 break;
             case 12:
                 pm2lStokes = readM2LMat("M2LStokes1D3Dp12", 12, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp12", 12, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp12", 12, 3);
                 break;
             case 14:
                 pm2lStokes = readM2LMat("M2LStokes1D3Dp14", 14, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp14", 14, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp14", 14, 3);
                 break;
             case 16:
                 pm2lStokes = readM2LMat("M2LStokes1D3Dp16", 16, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge1D3Dp16", 16, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole1D3Dp16", 16, 3);
                 break;
             default:
                 printf("no m2l data at corresponding p, exit now\n");
@@ -145,32 +138,26 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
             case 6:
                 pm2lStokes = readM2LMat("M2LStokes2D3Dp6", 6, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge2D3Dp6", 6, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole2D3Dp6", 6, 3);
                 break;
             case 8:
                 pm2lStokes = readM2LMat("M2LStokes2D3Dp8", 8, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge2D3Dp8", 8, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole2D3Dp8", 8, 3);
                 break;
             case 10:
                 pm2lStokes = readM2LMat("M2LStokes2D3Dp10", 10, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge2D3Dp10", 10, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole2D3Dp10", 10, 3);
                 break;
             case 12:
                 pm2lStokes = readM2LMat("M2LStokes2D3Dp12", 12, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge2D3Dp12", 12, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole2D3Dp12", 12, 3);
                 break;
             case 14:
                 pm2lStokes = readM2LMat("M2LStokes2D3Dp14", 14, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge2D3Dp14", 14, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole2D3Dp14", 14, 3);
                 break;
             case 16:
                 pm2lStokes = readM2LMat("M2LStokes2D3Dp16", 16, 3);
                 pm2lLapCharge = readM2LMat("M2LLapCharge2D3Dp16", 16, 1);
-                pm2lLapDipole = readM2LMat("M2LLapDipole2D3Dp16", 16, 3);
                 break;
             default:
                 printf("no m2l data at corresponding p, exit now\n");
@@ -197,17 +184,15 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
     const pvfmm::Kernel<double> &kernelStokes = pvfmm::StokesKernel<double>::velocity();
     matrixStokes.Initialize(mult_order, comm, &kernelStokes);
 
-    const pvfmm::Kernel<double> &kernelLapCharge = pvfmm::LaplaceCustomKernel<double>::potentialGradient();
-    matrixLapChargeF.Initialize(mult_order, comm, &kernelLapCharge);
-    matrixLapChargeFZ.Initialize(mult_order, comm, &kernelLapCharge);
+    const pvfmm::Kernel<double> &kernelLapCharge = pvfmm::LaplaceLayerKernel<double>::PGrad();
+    matrixLapCharge.Initialize(mult_order, comm, &kernelLapCharge);
 
-    const pvfmm::Kernel<double> &kernelLapDipole = pvfmm::LaplaceCustomKernel<double>::dipoleGradient();
+    const pvfmm::Kernel<double> &kernelLapDipole = pvfmm::LaplaceLayerKernel<double>::PGrad();
     matrixLapDipole.Initialize(mult_order, comm, &kernelLapDipole);
 
     treePtrStokes = nullptr;
     treePtrLapDipole = nullptr;
-    treePtrLapChargeF = nullptr;
-    treePtrLapChargeFZ = nullptr;
+    treePtrLapCharge = nullptr;
 
 #ifdef FMMDEBUG
     pvfmm::Profile::Enable(true);
@@ -277,138 +262,138 @@ void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, do
     }
 }
 
-void FMM_WrapperWall2D::treeSetup(pvfmm::PtFMM_Data &treeData, const std::vector<double> &src_coord,
-                                  const std::vector<double> &trg_coord, bool withOriginal) {
-    // no rotate, image wall at z = 0.5
-    //    printf("start setup for treeData\n");
+// void FMM_WrapperWall2D::treeSetup(pvfmm::PtFMM_Data &treeData, const std::vector<double> &src_coord,
+//                                   const std::vector<double> &trg_coord, bool withOriginal) {
+//     // no rotate, image wall at z = 0.5
+//     //    printf("start setup for treeData\n");
 
-    const int nsrc = src_coord.size() / 3;
+//     const int nsrc = src_coord.size() / 3;
 
-    if (withOriginal) {
-        treeData.src_coord.Resize(nsrc * 3 * 2); // including the original
-    } else {
-        treeData.src_coord.Resize(nsrc * 3); // image only
-    }
+//     if (withOriginal) {
+//         treeData.src_coord.Resize(nsrc * 3 * 2); // including the original
+//     } else {
+//         treeData.src_coord.Resize(nsrc * 3); // image only
+//     }
 
-    if (pbc == PAXIS::PX) {
-// original
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-        }
-        if (withOriginal) {
-// image
-#pragma omp parallel for
-            for (size_t i = nsrc; i < nsrc * 2; i++) {
-                treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
-                treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
-                treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
-            }
-        }
-    } else if (pbc == PAXIS::PXY) {
-// original
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-        }
-        if (withOriginal) {
-// image
-#pragma omp parallel for
-            for (size_t i = nsrc; i < nsrc * 2; i++) {
-                treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
-                treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
-                treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
-            }
-        }
-    } else {
-// original
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i] = ((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-        }
-        if (withOriginal) {
-// image
-#pragma omp parallel for
-            for (size_t i = nsrc; i < nsrc * 2; i++) {
-                treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
-                treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
-                treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
-            }
-        }
-    }
+//     if (pbc == PAXIS::PX) {
+// // original
+// #pragma omp parallel for
+//         for (size_t i = 0; i < nsrc; i++) {
+//             treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
+//             treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
+//             treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
+//         }
+//         if (withOriginal) {
+// // image
+// #pragma omp parallel for
+//             for (size_t i = nsrc; i < nsrc * 2; i++) {
+//                 treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
+//                 treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
+//                 treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
+//             }
+//         }
+//     } else if (pbc == PAXIS::PXY) {
+// // original
+// #pragma omp parallel for
+//         for (size_t i = 0; i < nsrc; i++) {
+//             treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
+//             treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
+//             treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
+//         }
+//         if (withOriginal) {
+// // image
+// #pragma omp parallel for
+//             for (size_t i = nsrc; i < nsrc * 2; i++) {
+//                 treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
+//                 treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
+//                 treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
+//             }
+//         }
+//     } else {
+// // original
+// #pragma omp parallel for
+//         for (size_t i = 0; i < nsrc; i++) {
+//             treeData.src_coord[3 * i] = ((src_coord[3 * i] + xshift) * scaleFactor);
+//             treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
+//             treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
+//         }
+//         if (withOriginal) {
+// // image
+// #pragma omp parallel for
+//             for (size_t i = nsrc; i < nsrc * 2; i++) {
+//                 treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
+//                 treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
+//                 treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
+//             }
+//         }
+//     }
 
-    if (!withOriginal) {
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * i + 2];
-        }
-    }
+//     if (!withOriginal) {
+// #pragma omp parallel for
+//         for (size_t i = 0; i < nsrc; i++) {
+//             treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * i + 2];
+//         }
+//     }
 
-    treeData.surf_coord.Resize(0);
-#ifdef FMMDEBUG
-    printf("src_coord setup for treeData\n");
-#endif
+//     treeData.surf_coord.Resize(0);
+// #ifdef FMMDEBUG
+//     printf("src_coord setup for treeData\n");
+// #endif
 
-    // Set target points.
-    // use the same rotation and periodic wrap as source
+//     // Set target points.
+//     // use the same rotation and periodic wrap as source
 
-    const int ntrg = trg_coord.size() / 3;
-    treeData.trg_coord.Resize(ntrg * 3);
-    // image target values not needed
-    if (pbc == PAXIS::PX) {
-// original
-#pragma omp parallel for
-        for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-        }
+//     const int ntrg = trg_coord.size() / 3;
+//     treeData.trg_coord.Resize(ntrg * 3);
+//     // image target values not needed
+//     if (pbc == PAXIS::PX) {
+// // original
+// #pragma omp parallel for
+//         for (size_t i = 0; i < ntrg; i++) {
+//             treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
+//             treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
+//             treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
+//         }
 
-    } else if (pbc == PAXIS::PXY) {
-// original
-#pragma omp parallel for
-        for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-        }
+//     } else if (pbc == PAXIS::PXY) {
+// // original
+// #pragma omp parallel for
+//         for (size_t i = 0; i < ntrg; i++) {
+//             treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
+//             treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
+//             treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
+//         }
 
-    } else {
-        assert(pbc == PAXIS::NONE);
-#pragma omp parallel for
-        for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i] = ((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-        }
-    }
+//     } else {
+//         assert(pbc == PAXIS::NONE);
+// #pragma omp parallel for
+//         for (size_t i = 0; i < ntrg; i++) {
+//             treeData.trg_coord[3 * i] = ((trg_coord[3 * i] + xshift) * scaleFactor);
+//             treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
+//             treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
+//         }
+//     }
 
-    // prevent PVFMM from breaking down with coord=1
-    const int NS = treeData.src_coord.Dim();
-    const int NT = treeData.trg_coord.Dim();
-    const double eps = std::numeric_limits<double>::epsilon() * 100;
-#pragma omp parallel for
-    for (int i = 0; i < NS; i++) {
-        if (treeData.src_coord[i] > 1 - eps)
-            treeData.src_coord[i] = 1 - eps;
-    }
-#pragma omp parallel for
-    for (int i = 0; i < NT; i++) {
-        if (treeData.trg_coord[i] > 1 - eps)
-            treeData.trg_coord[i] = 1 - eps;
-    }
+//     // prevent PVFMM from breaking down with coord=1
+//     const int NS = treeData.src_coord.Dim();
+//     const int NT = treeData.trg_coord.Dim();
+//     const double eps = std::numeric_limits<double>::epsilon() * 100;
+// #pragma omp parallel for
+//     for (int i = 0; i < NS; i++) {
+//         if (treeData.src_coord[i] > 1 - eps)
+//             treeData.src_coord[i] = 1 - eps;
+//     }
+// #pragma omp parallel for
+//     for (int i = 0; i < NT; i++) {
+//         if (treeData.trg_coord[i] > 1 - eps)
+//             treeData.trg_coord[i] = 1 - eps;
+//     }
 
-#ifdef FMMDEBUG
-    printf("trg_coord setup for treeData\n");
-    treePointDump(treeData);
-#endif
-}
+// #ifdef FMMDEBUG
+//     printf("trg_coord setup for treeData\n");
+//     treePointDump(treeData);
+// #endif
+// }
 
 void FMM_WrapperWall2D::treePointDump(const pvfmm::PtFMM_Data &treeData) {
     const int nsrc = treeData.src_coord.Dim() / 3;
@@ -425,8 +410,7 @@ void FMM_WrapperWall2D::treePointDump(const pvfmm::PtFMM_Data &treeData) {
     }
 }
 
-void FMM_WrapperWall2D::FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord,
-                                       const std::vector<double> *surf_coordPtr) {
+void FMM_WrapperWall2D::FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord) {
     int myRank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     if (myRank == 0)
@@ -437,27 +421,23 @@ void FMM_WrapperWall2D::FMM_UpdateTree(const std::vector<double> &src_coord, con
     if (myRank == 0)
         printf("tree deleted\n");
 
+    scalePoints(src_coord, trg_coord);
+
     myTimer.start();
-    treeStokes(src_coord, trg_coord);
+    treeStokes();
     myTimer.stop("Stokes tree construction");
 
     myTimer.start();
-    treeLapDipole(src_coord, trg_coord);
+    treeLapDipole();
     myTimer.stop("Lap Dipole tree construction");
 
     myTimer.start();
-    treeLapChargeF(src_coord, trg_coord);
-    myTimer.stop("Lap Charge F tree construction");
-
-    myTimer.start();
-    treeLapChargeFZ(src_coord, trg_coord);
-    myTimer.stop("Lap Charge FZ tree construction");
-
+    treeLapCharge();
+    myTimer.stop("Lap Charge tree construction");
     // printf("SetupFMM Complete\n");
 }
 
-void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val,
-                                     std::vector<double> *surf_valPtr) {
+void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
     FMM_DataClear();
     if (n_trg != trg_val.size() / 3) {
         printf("n_trg error \n");
@@ -466,12 +446,9 @@ void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val, const int n_t
     // in place rotate of src_val;
     if (src_val == nullptr) {
         printf("Error, no source value\n");
-        return;
+        exit(1);
     }
-    if (surf_valPtr != nullptr) {
-        printf("Error, surfval not implemented\n");
-        return;
-    }
+
     const int nsrc = src_val->size() / 3;
     const int ntrg = trg_val.size() / 3;
 
@@ -482,10 +459,7 @@ void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val, const int n_t
     evalLapDipole(trg_val, n_trg, src_val);
 
     // evaluate 3, LaplaceCharge FMM
-    evalLapChargeF(trg_val, n_trg, src_val);
-
-    // evaluate 4, LaplaceCharge FMM
-    evalLapChargeFZ(trg_val, n_trg, src_val);
+    evalLapCharge(trg_val, n_trg, src_val);
 
 #ifdef FMMDEBUG
     printf("before pxyz: %f,%f,%f", trg_val[0], trg_val[1], trg_val[2]);
@@ -581,13 +555,13 @@ void FMM_WrapperWall2D::calcMLapCharge(int treeSelect) {
 
     // no copy
     if (treeSelect == 0) {
-        vPtr = &(treePtrLapChargeF->RootNode()->FMMData()->upward_equiv); // the value calculated by pvfmm
-        trgCoordPtr = &(treeDataLapChargeF.trg_coord);
-        trgValuePtr = &trgValueLapChargeF;
+        vPtr = &(treePtrLapCharge->RootNode()->FMMData()->upward_equiv); // the value calculated by pvfmm
+        trgCoordPtr = &(treeDataLapCharge.trg_coord);
+        trgValuePtr = &trgValueLapCharge;
     } else if (treeSelect == 1) {
-        vPtr = &(treePtrLapChargeFZ->RootNode()->FMMData()->upward_equiv); // the value calculated by pvfmm
-        trgCoordPtr = &(treeDataLapChargeFZ.trg_coord);
-        trgValuePtr = &trgValueLapChargeFZ;
+        vPtr = &(treePtrLapDipole->RootNode()->FMMData()->upward_equiv); // the value calculated by pvfmm
+        trgCoordPtr = &(treeDataLapDipole.trg_coord);
+        trgValuePtr = &trgValueLapDipole;
     }
 
     // calculate M2L, Laplace kernel 1x1
@@ -615,7 +589,7 @@ void FMM_WrapperWall2D::calcMLapCharge(int treeSelect) {
         exit(1);
     }
 
-    const pvfmm::Kernel<double> &kernelLap = pvfmm::LaplaceCustomKernel<double>::potentialGradient();
+    const pvfmm::Kernel<double> &kernelLap = pvfmm::LaplaceLayerKernel<double>::PGrad();
     const size_t chunkSize = 2000; // each chunk has 2000 target points.
     const size_t chunkNumber = floor(nTrg / chunkSize) + 1;
     // printf("chunkSize, chunkNumber: %zu, %zu\n", chunkSize, chunkNumber);
@@ -627,53 +601,6 @@ void FMM_WrapperWall2D::calcMLapCharge(int treeSelect) {
         kernelLap.k_l2t->ker_poten(pointLEquiv.data(), equivN, M2Lsource.data(), 1, &(trgCoord[3 * idTrgLow]),
                                    idTrgHigh - idTrgLow, &(trgValue[4 * idTrgLow]), NULL);
     }
-
-    return;
-}
-
-void FMM_WrapperWall2D::calcMLapDipole() {
-
-    const auto &v = treePtrLapDipole->RootNode()->FMMData()->upward_equiv;
-
-    // calculate M2L, Laplace kernel 1x1
-    int M = 3 * equivN;
-    int N = 3 * equivN; // checkN = equivN in this code.
-    M2Lsource.resize(M);
-
-#pragma omp parallel for
-    for (int i = 0; i < M; i++) {
-        double temp = 0;
-#pragma omp simd
-        for (int j = 0; j < N; j++) {
-            temp += pm2lLapDipole[i * N + j] * v[j];
-        }
-        M2Lsource[i] = temp;
-    }
-
-    // calculate M2L, Laplace kernel 1x1, with gradient 3*1
-    const double factor4pi = 1 / (4 * (double)3.1415926535897932384626433);
-    auto &trgCoord = treeDataLapDipole.trg_coord;
-    auto &trgValue = trgValueLapDipole;
-
-    const int nTrg = trgCoord.Dim() / 3;
-    if (nTrg * 4 != trgValue.size()) {
-        printf("trg coord and value size error for lap dipole ");
-        exit(1);
-    }
-
-    const pvfmm::Kernel<double> &kernelD = pvfmm::LaplaceCustomKernel<double>::dipoleGradient();
-    const size_t chunkSize = 2000; // each chunk has 2000 target points.
-    const size_t chunkNumber = floor(nTrg / chunkSize) + 1;
-    // printf("chunkSize, chunkNumber: %zu, %zu\n", chunkSize, chunkNumber);
-#pragma omp parallel for schedule(static, 1)
-    for (size_t i = 0; i < chunkNumber; i++) {
-        const size_t idTrgLow = i * chunkSize;
-        const size_t idTrgHigh = (i + 1 < chunkNumber) ? idTrgLow + chunkSize : nTrg; // not inclusive
-        //        printf("i, idTrgLow, idTrgHigh: %d, %d, %d\n", i, idTrgLow, idTrgHigh);
-        kernelD.k_l2t->ker_poten(pointLEquiv.data(), equivN, M2Lsource.data(), 1, &(trgCoord[3 * idTrgLow]),
-                                 idTrgHigh - idTrgLow, &(trgValueLapDipole[4 * idTrgLow]), NULL);
-    }
-    // printf("finish dipole m\n");
 
     return;
 }
@@ -691,7 +618,7 @@ void FMM_WrapperWall2D::sumImageSystem(std::vector<double> &trgValue) {
 // part 2, Laplace Dipole
 #pragma omp parallel for
     for (int i = 0; i < ntrg; i++) {
-        const double x3 = treeDataLapDipole.trg_coord[3 * i + 2] - 0.5;
+        const double x3 = trgCoordScaled[3 * i + 2] - 0.5;
         double ud[3];
         ud[0] = x3 * trgValueLapDipole[4 * i + 1];
         ud[1] = x3 * trgValueLapDipole[4 * i + 2];
@@ -701,25 +628,16 @@ void FMM_WrapperWall2D::sumImageSystem(std::vector<double> &trgValue) {
         trgValue[3 * i + 2] += ud[2];
     }
 
-// part 3, Laplace charge F
+// part 3, Laplace charge FZ
 #pragma omp parallel for
     for (int i = 0; i < ntrg; i++) {
-        const double x3 = treeDataLapChargeF.trg_coord[3 * i + 2] - 0.5;
-        double uL1[3];
-        uL1[0] = -0.5 * x3 * trgValueLapChargeF[4 * i + 1];
-        uL1[1] = -0.5 * x3 * trgValueLapChargeF[4 * i + 2];
-        uL1[2] = -0.5 * x3 * trgValueLapChargeF[4 * i + 3] + 0.5 * trgValueLapChargeF[4 * i];
-        trgValue[3 * i] += uL1[0];
-        trgValue[3 * i + 1] += uL1[1];
-        trgValue[3 * i + 2] += uL1[2];
-    }
-
-// part 4, Laplace charge FZ
-#pragma omp parallel for
-    for (int i = 0; i < ntrg; i++) {
-        trgValue[3 * i] += 0.5 * trgValueLapChargeFZ[4 * i + 1];
-        trgValue[3 * i + 1] += 0.5 * trgValueLapChargeFZ[4 * i + 2];
-        trgValue[3 * i + 2] += 0.5 * trgValueLapChargeFZ[4 * i + 3];
+        double uL2[3];
+        uL2[0] = 0.5 * trgValueLapCharge[4 * i + 1];
+        uL2[1] = 0.5 * trgValueLapCharge[4 * i + 2];
+        uL2[2] = 0.5 * trgValueLapCharge[4 * i + 3];
+        trgValue[3 * i] += uL2[0];
+        trgValue[3 * i + 1] += uL2[1];
+        trgValue[3 * i + 2] += uL2[2];
     }
 
 // scale Back
@@ -729,12 +647,12 @@ void FMM_WrapperWall2D::sumImageSystem(std::vector<double> &trgValue) {
     }
 }
 
-void FMM_WrapperWall2D::treeStokes(const std::vector<double> &src_coord, const std::vector<double> &trg_coord) {
+void FMM_WrapperWall2D::treeStokes() {
     treePtrStokes = new pvfmm::PtFMM_Tree(MPI_COMM_WORLD);
     treeDataStokes.dim = 3;
     treeDataStokes.max_depth = 15;
     treeDataStokes.max_pts = max_pts;
-    treeSetup(treeDataStokes, src_coord, trg_coord, true);
+    treeSetupStokes();
     treeDataStokes.pt_coord = treeDataStokes.src_coord.Dim() > treeDataStokes.trg_coord.Dim()
                                   ? treeDataStokes.src_coord
                                   : treeDataStokes.trg_coord; // use src_coord to construct FMM tree
@@ -744,12 +662,13 @@ void FMM_WrapperWall2D::treeStokes(const std::vector<double> &src_coord, const s
     treePtrStokes->SetupFMM(&matrixStokes);
 }
 
-void FMM_WrapperWall2D::treeLapDipole(const std::vector<double> &src_coord, const std::vector<double> &trg_coord) {
+void FMM_WrapperWall2D::treeLapDipole() {
+    // both SL and DL
     treePtrLapDipole = new pvfmm::PtFMM_Tree(MPI_COMM_WORLD);
     treeDataLapDipole.dim = 3;
     treeDataLapDipole.max_depth = 15;
     treeDataLapDipole.max_pts = max_pts;
-    treeSetup(treeDataLapDipole, src_coord, trg_coord, false);
+    treeSetupDipole();
     treeDataLapDipole.pt_coord = treeDataStokes.pt_coord; // use src_coord to construct FMM tree
     treePtrLapDipole->Initialize(&treeDataLapDipole);
     bool adap = true;
@@ -757,30 +676,17 @@ void FMM_WrapperWall2D::treeLapDipole(const std::vector<double> &src_coord, cons
     treePtrLapDipole->SetupFMM(&matrixLapDipole);
 }
 
-void FMM_WrapperWall2D::treeLapChargeF(const std::vector<double> &src_coord, const std::vector<double> &trg_coord) {
-    treePtrLapChargeF = new pvfmm::PtFMM_Tree(MPI_COMM_WORLD);
-    treeDataLapChargeF.dim = 3;
-    treeDataLapChargeF.max_depth = 15;
-    treeDataLapChargeF.max_pts = max_pts;
-    treeSetup(treeDataLapChargeF, src_coord, trg_coord, true);
-    treeDataLapChargeF.pt_coord = treeDataStokes.pt_coord; // use src_coord to construct FMM tree
-    treePtrLapChargeF->Initialize(&treeDataLapChargeF);
+void FMM_WrapperWall2D::treeLapCharge() {
+    treePtrLapCharge = new pvfmm::PtFMM_Tree(MPI_COMM_WORLD);
+    treeDataLapCharge.dim = 3;
+    treeDataLapCharge.max_depth = 15;
+    treeDataLapCharge.max_pts = max_pts;
+    treeSetupCharge();
+    treeDataLapCharge.pt_coord = treeDataStokes.pt_coord; // use src_coord to construct FMM tree
+    treePtrLapCharge->Initialize(&treeDataLapCharge);
     bool adap = true;
-    treePtrLapChargeF->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace : pvfmm::Periodic);
-    treePtrLapChargeF->SetupFMM(&matrixLapChargeF);
-}
-
-void FMM_WrapperWall2D::treeLapChargeFZ(const std::vector<double> &src_coord, const std::vector<double> &trg_coord) {
-    treePtrLapChargeFZ = new pvfmm::PtFMM_Tree(MPI_COMM_WORLD);
-    treeDataLapChargeFZ.dim = 3;
-    treeDataLapChargeFZ.max_depth = 15;
-    treeDataLapChargeFZ.max_pts = max_pts;
-    treeSetup(treeDataLapChargeFZ, src_coord, trg_coord, true);
-    treeDataLapChargeFZ.pt_coord = treeDataStokes.pt_coord; // use src_coord to construct FMM tree
-    treePtrLapChargeFZ->Initialize(&treeDataLapChargeFZ);
-    bool adap = true;
-    treePtrLapChargeFZ->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace : pvfmm::Periodic);
-    treePtrLapChargeFZ->SetupFMM(&matrixLapChargeFZ);
+    treePtrLapCharge->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace : pvfmm::Periodic);
+    treePtrLapCharge->SetupFMM(&matrixLapCharge);
 }
 
 void FMM_WrapperWall2D::evalStokes(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
@@ -817,45 +723,61 @@ void FMM_WrapperWall2D::evalLapDipole(std::vector<double> &trg_val, const int n_
     const int nsrc = src_val->size() / 3;
     const int ntrg = trg_val.size() / 3;
     // evaluate 2, LaplaceDipole FMM
-    srcValueLapDipole.resize(3 * nsrc);
+    // SL: src + image
+    // DL: image only
+    srcValueLapDipoleSL.resize(2 * nsrc);
+    srcValueLapDipoleDL.resize(3 * nsrc);
     myTimer.start();
-// orginal, no image needed for dipole term
+
+// SL : src + image charge values
 #pragma omp parallel for
     for (int i = 0; i < nsrc; i++) {
-        const double y3 = -(treeDataLapDipole.src_coord[3 * i + 2] - 0.5);
-        srcValueLapDipole[3 * i] = -y3 * (*src_val)[3 * i];
-        srcValueLapDipole[3 * i + 1] = -y3 * (*src_val)[3 * i + 1];
-        srcValueLapDipole[3 * i + 2] = y3 * (*src_val)[3 * i + 2];
+        srcValueLapDipoleSL[i] = -0.5 * (*src_val)[3 * i + 2];
     }
-    trgValueLapDipole.resize(ntrg * 4); // value + gradient
-    PtFMM_Evaluate(treePtrLapDipole, trgValueLapDipole, ntrg, &srcValueLapDipole, nullptr);
+
+#pragma omp parallel for
+    for (int i = 0; i < nsrc; i++) {
+        srcValueLapDipoleSL[i + nsrc] = 0.5 * (*src_val)[3 * i + 2];
+    }
+
+    // DL : dipole values
+#pragma omp parallel for
+    for (int i = 0; i < nsrc; i++) {
+        const double y3 = (srcCoordScaled[3 * i + 2] - 0.5);
+        srcValueLapDipoleDL[3 * i + 0] = -y3 * (*src_val)[3 * i + 0];
+        srcValueLapDipoleDL[3 * i + 1] = -y3 * (*src_val)[3 * i + 1];
+        srcValueLapDipoleDL[3 * i + 2] = y3 * (*src_val)[3 * i + 2];
+    }
+    trgValueLapDipole.resize(ntrg * 4); // PGrad Kernel
+    PtFMM_Evaluate(treePtrLapDipole, trgValueLapDipole, ntrg, &srcValueLapDipoleSL, &srcValueLapDipoleDL);
     myTimer.stop("Lap Dipole Near Field");
     myTimer.start();
     if (pbc != NONE) {
-        calcMLapDipole();
+        calcMLapCharge(1);
     }
     myTimer.stop("Lap Dipole Far Field");
-    // treePtrLapDipole->ClearFMMData();
 }
 
-void FMM_WrapperWall2D::evalLapChargeF(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
+void FMM_WrapperWall2D::evalLapCharge(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
     const int nsrc = src_val->size() / 3;
     const int ntrg = trg_val.size() / 3;
     // evaluate 3, LaplaceCharge FMM
-    srcValueLapChargeF.resize(nsrc * 2);
+    srcValueLapCharge.resize(nsrc * 2);
     myTimer.start();
 // original
 #pragma omp parallel for
     for (int i = 0; i < nsrc; i++) {
-        srcValueLapChargeF[i] = (*src_val)[3 * i + 2]; // fz
+        const double y3 = (srcCoordScaled[3 * i + 2] - 0.5);
+        srcValueLapCharge[i] = y3 * (*src_val)[3 * i + 2]; // fz
     }
 // image
 #pragma omp parallel for
-    for (int i = nsrc; i < 2 * nsrc; i++) {
-        srcValueLapChargeF[i] = -srcValueLapChargeF[i - nsrc]; // -fz
+    for (int i = 0; i < nsrc; i++) {
+        const double y3 = (srcCoordScaled[3 * i + 2] - 0.5);
+        srcValueLapCharge[i + nsrc] = -y3 * (*src_val)[3 * i + 2]; // -fz
     }
-    trgValueLapChargeF.resize(ntrg * 4); // value + gradient
-    PtFMM_Evaluate(treePtrLapChargeF, trgValueLapChargeF, ntrg, &srcValueLapChargeF, nullptr);
+    trgValueLapCharge.resize(ntrg * 4); // value + gradient
+    PtFMM_Evaluate(treePtrLapCharge, trgValueLapCharge, ntrg, &srcValueLapCharge, nullptr);
     myTimer.stop("Lap Charge F Near Field");
     myTimer.start();
     if (pbc != NONE) {
@@ -865,45 +787,14 @@ void FMM_WrapperWall2D::evalLapChargeF(std::vector<double> &trg_val, const int n
     // treePtrLapChargeF->ClearFMMData();
 }
 
-void FMM_WrapperWall2D::evalLapChargeFZ(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
-    const int nsrc = src_val->size() / 3;
-    const int ntrg = trg_val.size() / 3;
-    // evaluate 4, LaplaceCharge FMM
-    srcValueLapChargeFZ.resize(nsrc * 2);
-    myTimer.start();
-// original
-#pragma omp parallel for
-    for (int i = 0; i < nsrc; i++) {
-        const double y3 = treeDataLapChargeFZ.src_coord[3 * i + 2] - 0.5;
-        srcValueLapChargeFZ[i] = y3 * (*src_val)[3 * i + 2]; // fz
-    }
-// image
-#pragma omp parallel for
-    for (int i = nsrc; i < 2 * nsrc; i++) {
-        srcValueLapChargeFZ[i] = -srcValueLapChargeFZ[i - nsrc]; // -fz
-    }
-    trgValueLapChargeFZ.resize(ntrg * 4); // value + gradient
-    PtFMM_Evaluate(treePtrLapChargeFZ, trgValueLapChargeFZ, ntrg, &srcValueLapChargeFZ, nullptr);
-    myTimer.stop("Lap Charge FZ Near Field");
-    myTimer.start();
-    if (pbc != NONE) {
-        calcMLapCharge(1);
-    }
-    myTimer.stop("Lap Charge FZ Far Field");
-    // treePtrLapChargeFZ->ClearFMMData();
-}
-
 void FMM_WrapperWall2D::FMM_DataClear() {
     // clear data, keep tree
 
     if (treePtrStokes != nullptr) {
         treePtrStokes->ClearFMMData();
     }
-    if (treePtrLapChargeF != nullptr) {
-        treePtrLapChargeF->ClearFMMData();
-    }
-    if (treePtrLapChargeFZ != nullptr) {
-        treePtrLapChargeFZ->ClearFMMData();
+    if (treePtrLapCharge != nullptr) {
+        treePtrLapCharge->ClearFMMData();
     }
     if (treePtrLapDipole != nullptr) {
         treePtrLapDipole->ClearFMMData();
@@ -911,13 +802,12 @@ void FMM_WrapperWall2D::FMM_DataClear() {
 
     // clear old Data
     srcValueStokes.clear();
-    srcValueLapChargeF.clear();
-    srcValueLapChargeFZ.clear();
-    srcValueLapDipole.clear();
+    srcValueLapCharge.clear();
+    srcValueLapDipoleSL.clear();
+    srcValueLapDipoleDL.clear();
 
     trgValueStokes.clear();
-    trgValueLapChargeF.clear();
-    trgValueLapChargeFZ.clear();
+    trgValueLapCharge.clear();
     trgValueLapDipole.clear();
 
     return;
@@ -931,13 +821,9 @@ void FMM_WrapperWall2D::FMM_TreeClear() {
         delete treePtrStokes;
         treePtrStokes = nullptr; // after delete the pointer is not equal to nullptr
     }
-    if (treePtrLapChargeF != nullptr) {
-        delete treePtrLapChargeF;
-        treePtrLapChargeF = nullptr;
-    }
-    if (treePtrLapChargeFZ != nullptr) {
-        delete treePtrLapChargeFZ;
-        treePtrLapChargeFZ = nullptr;
+    if (treePtrLapCharge != nullptr) {
+        delete treePtrLapCharge;
+        treePtrLapCharge = nullptr;
     }
     if (treePtrLapDipole != nullptr) {
         delete treePtrLapDipole;
@@ -955,8 +841,168 @@ FMM_WrapperWall2D::~FMM_WrapperWall2D() {
         delete[] pm2lLapCharge;
         pm2lLapCharge = nullptr;
     }
-    if (pm2lLapDipole != nullptr) {
-        delete[] pm2lLapDipole;
-        pm2lLapDipole = nullptr;
+}
+
+void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord, const std::vector<double> &trgCoord) {
+    // filled srcCoordScaled, srcImageCoordScaled, trgCoordScaled
+
+    // srcCoordScaled:
+    const int nsrc = srcCoord.size() / 3;
+    const int ntrg = trgCoord.size() / 3;
+
+    srcCoordScaled.resize(nsrc * 3);
+    srcImageCoordScaled.resize(nsrc * 3);
+    trgCoordScaled.resize(ntrg * 3);
+
+    if (pbc == PAXIS::PX) {
+#pragma omp parallel for
+        for (size_t i = 0; i < nsrc; i++) {
+            srcCoordScaled[3 * i] = fracwrap((srcCoord[3 * i] + xshift) * scaleFactor);
+            srcCoordScaled[3 * i + 1] = ((srcCoord[3 * i + 1] + yshift) * scaleFactor);
+            srcCoordScaled[3 * i + 2] = ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
+        }
+#pragma omp parallel for
+        for (size_t i = 0; i < ntrg; i++) {
+            trgCoordScaled[3 * i] = fracwrap((trgCoord[3 * i] + xshift) * scaleFactor);
+            trgCoordScaled[3 * i + 1] = ((trgCoord[3 * i + 1] + yshift) * scaleFactor);
+            trgCoordScaled[3 * i + 2] = ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
+        }
+    } else if (pbc == PAXIS::PXY) {
+#pragma omp parallel for
+        for (size_t i = 0; i < nsrc; i++) {
+            srcCoordScaled[3 * i] = fracwrap((srcCoord[3 * i] + xshift) * scaleFactor);
+            srcCoordScaled[3 * i + 1] = fracwrap((srcCoord[3 * i + 1] + yshift) * scaleFactor);
+            srcCoordScaled[3 * i + 2] = ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
+        }
+#pragma omp parallel for
+        for (size_t i = 0; i < ntrg; i++) {
+            trgCoordScaled[3 * i] = fracwrap((trgCoord[3 * i] + xshift) * scaleFactor);
+            trgCoordScaled[3 * i + 1] = fracwrap((trgCoord[3 * i + 1] + yshift) * scaleFactor);
+            trgCoordScaled[3 * i + 2] = ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
+        }
+    } else {
+#pragma omp parallel for
+        for (size_t i = 0; i < nsrc; i++) {
+            srcCoordScaled[3 * i] = ((srcCoord[3 * i] + xshift) * scaleFactor);
+            srcCoordScaled[3 * i + 1] = ((srcCoord[3 * i + 1] + yshift) * scaleFactor);
+            srcCoordScaled[3 * i + 2] = ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
+        }
+#pragma omp parallel for
+        for (size_t i = 0; i < ntrg; i++) {
+            trgCoordScaled[3 * i] = ((trgCoord[3 * i] + xshift) * scaleFactor);
+            trgCoordScaled[3 * i + 1] = ((trgCoord[3 * i + 1] + yshift) * scaleFactor);
+            trgCoordScaled[3 * i + 2] = ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
+        }
     }
+
+    // prevent PVFMM from breaking down with coord=1
+    const double eps = std::numeric_limits<double>::epsilon() * 100;
+    const int NS = nsrc * 3;
+    const int NT = ntrg * 3;
+#pragma omp parallel for
+    for (int i = 0; i < NS; i++) {
+        // printf("src scaled %lf\n", srcCoordScaled[i]);
+        if (srcCoordScaled[i] > 1 - eps)
+            srcCoordScaled[i] = 1 - eps;
+    }
+#pragma omp parallel for
+    for (int i = 0; i < NT; i++) {
+        // printf("trg scaled %lf\n", trgCoordScaled[i]);
+        if (trgCoordScaled[i] > 1 - eps)
+            trgCoordScaled[i] = 1 - eps;
+    }
+
+    // image of src
+#pragma omp parallel for
+    for (size_t i = 0; i < nsrc; i++) {
+        srcImageCoordScaled[3 * i] = srcCoordScaled[3 * i];
+        srcImageCoordScaled[3 * i + 1] = srcCoordScaled[3 * i + 1];
+        srcImageCoordScaled[3 * i + 2] = 1 - srcCoordScaled[3 * i + 2];
+    }
+}
+
+void FMM_WrapperWall2D::treeSetupStokes() {
+    // SL: src + image
+    // DL: empty
+    const int ns = srcCoordScaled.size();
+    const int nt = trgCoordScaled.size();
+
+    treeDataStokes.src_coord.Resize(2 * ns);
+#pragma omp parallel for
+    for (int i = 0; i < ns; i++) {
+        treeDataStokes.src_coord[i] = srcCoordScaled[i];
+    }
+#pragma omp parallel for
+    for (int i = 0; i < ns; i++) {
+        treeDataStokes.src_coord[i + ns] = srcImageCoordScaled[i];
+    }
+
+    treeDataStokes.trg_coord.Resize(nt);
+#pragma omp parallel for
+    for (int i = 0; i < nt; i++) {
+        treeDataStokes.trg_coord[i] = trgCoordScaled[i];
+    }
+
+    treeDataStokes.surf_coord.Resize(0);
+
+    // printf("tree data lap charge\n");
+    // treePointDump(treeDataStokes);
+}
+void FMM_WrapperWall2D::treeSetupCharge() {
+    // SL: src + image
+    // DL: empty
+    const int ns = srcCoordScaled.size();
+    const int nt = trgCoordScaled.size();
+
+    treeDataLapCharge.src_coord.Resize(2 * ns);
+#pragma omp parallel for
+    for (int i = 0; i < ns; i++) {
+        treeDataLapCharge.src_coord[i] = srcCoordScaled[i];
+    }
+#pragma omp parallel for
+    for (int i = 0; i < ns; i++) {
+        treeDataLapCharge.src_coord[i + ns] = srcImageCoordScaled[i];
+    }
+
+    treeDataLapCharge.trg_coord.Resize(nt);
+#pragma omp parallel for
+    for (int i = 0; i < nt; i++) {
+        treeDataLapCharge.trg_coord[i] = trgCoordScaled[i];
+    }
+
+    treeDataLapCharge.surf_coord.Resize(0);
+    // printf("tree data lap charge\n");
+    // treePointDump(treeDataLapCharge);
+}
+
+void FMM_WrapperWall2D::treeSetupDipole() {
+    // SL: src + image
+    // DL: image
+
+    const int ns = srcCoordScaled.size();
+    const int nt = trgCoordScaled.size();
+
+    treeDataLapDipole.src_coord.Resize(2 * ns);
+#pragma omp parallel for
+    for (int i = 0; i < ns; i++) {
+        treeDataLapDipole.src_coord[i] = srcCoordScaled[i];
+    }
+#pragma omp parallel for
+    for (int i = 0; i < ns; i++) {
+        treeDataLapDipole.src_coord[i + ns] = srcImageCoordScaled[i];
+    }
+
+    treeDataLapDipole.trg_coord.Resize(nt);
+#pragma omp parallel for
+    for (int i = 0; i < nt; i++) {
+        treeDataLapDipole.trg_coord[i] = trgCoordScaled[i];
+    }
+
+    treeDataLapDipole.surf_coord.Resize(ns);
+#pragma omp parallel for
+    for (int i = 0; i < ns; i++) {
+        treeDataLapDipole.surf_coord[i] = srcImageCoordScaled[i];
+    }
+    // printf("tree data lap dipole\n");
+    // treePointDump(treeDataLapDipole);
 }

@@ -310,8 +310,7 @@ void FMM_Wrapper::FMM_SetBox(double xlow_, double xhigh_, double ylow_, double y
     }
 }
 
-void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord,
-                                 const std::vector<double> *surf_coordPtr) {
+void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord) {
 
     myTimer.start();
 
@@ -434,11 +433,10 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
 #endif
         }
     }
-    if (surf_coordPtr != nullptr) {
+    {
         // set to NULL. currently no support for surf source
         const int nsurf = 0;
         treeData.surf_coord.Resize(nsurf * 3);
-        surf_coordPtr = nullptr;
     }
 
     // Set target points.
@@ -575,8 +573,7 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
 #endif
 }
 
-void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val,
-                               std::vector<double> *surf_valPtr) {
+void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
     FMM_DataClear();
     if (src_val == nullptr) {
         printf("Error, no source value\n");

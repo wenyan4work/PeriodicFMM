@@ -1,4 +1,4 @@
-SFTPATH=/mnt/home/wyan/local
+SFTPATH=/Users/wyan/local
 
 include $(PVFMM_DIR)/MakeVariables
 EIGEN= $(SFTPATH)/include/eigen3
@@ -15,7 +15,7 @@ CXXFLAGS= $(CXXFLAGS_PVFMM)
 LINKFLAGS= $(CXXFLAGS) $(LDLIBS_PVFMM) 
 
 # debug
-DEBUGMODE:= no
+DEBUGMODE:= yes
 
 # debug flags
 # CXXFLAGS += -DFMMTIMING 
