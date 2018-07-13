@@ -579,10 +579,6 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
         printf("Error, no source value\n");
         return;
     }
-    if (surf_valPtr != nullptr) {
-        printf("Error, surfval not implemented\n");
-        return;
-    }
 
     // in place rotate of src_val;
     const int nsrc = src_val->size() / 3;
@@ -636,7 +632,7 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
     }
 
     myTimer.start();
-    PtFMM_Evaluate(treePtr, trg_val, n_trg, src_val, surf_valPtr);
+    PtFMM_Evaluate(treePtr, trg_val, n_trg, src_val, nullptr);
     myTimer.stop("Stokes Near Field");
 
 #ifdef FMMDEBUG
