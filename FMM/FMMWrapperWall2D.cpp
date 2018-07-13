@@ -438,7 +438,6 @@ void FMM_WrapperWall2D::FMM_UpdateTree(const std::vector<double> &src_coord, con
 }
 
 void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
-    FMM_DataClear();
     if (n_trg != trg_val.size() / 3) {
         printf("n_trg error \n");
         exit(1);
@@ -450,20 +449,15 @@ void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val, const int n_t
     }
 
     const int nsrc = src_val->size() / 3;
-    const int ntrg = trg_val.size() / 3;
 
     // evaluate 1, Stokes FMM
-    evalStokes(trg_val, n_trg, src_val);
+    evalStokes(n_trg, src_val);
 
     // evaluate 2, LaplaceDipole FMM
-    evalLapDipole(trg_val, n_trg, src_val);
+    evalLapDipole(n_trg, src_val);
 
     // evaluate 3, LaplaceCharge FMM
-    evalLapCharge(trg_val, n_trg, src_val);
-
-#ifdef FMMDEBUG
-    printf("before pxyz: %f,%f,%f", trg_val[0], trg_val[1], trg_val[2]);
-#endif
+    evalLapCharge(n_trg, src_val);
 
     myTimer.start();
     sumImageSystem(trg_val);
@@ -564,6 +558,10 @@ void FMM_WrapperWall2D::calcMLapCharge(int treeSelect) {
         trgValuePtr = &trgValueLapDipole;
     }
 
+    // for (int j = 0; j < equivN; j++) {
+    //     printf("%lf\n", (*vPtr)[j]);
+    // }
+
     // calculate M2L, Laplace kernel 1x1
     int M = equivN;
     int N = equivN; // checkN = equivN in this code.
@@ -623,7 +621,7 @@ void FMM_WrapperWall2D::sumImageSystem(std::vector<double> &trgValue) {
         ud[0] = x3 * trgValueLapDipole[4 * i + 1];
         ud[1] = x3 * trgValueLapDipole[4 * i + 2];
         ud[2] = x3 * trgValueLapDipole[4 * i + 3] - trgValueLapDipole[4 * i];
-        trgValue[3 * i] += ud[0];
+        trgValue[3 * i + 0] += ud[0];
         trgValue[3 * i + 1] += ud[1];
         trgValue[3 * i + 2] += ud[2];
     }
@@ -635,7 +633,7 @@ void FMM_WrapperWall2D::sumImageSystem(std::vector<double> &trgValue) {
         uL2[0] = 0.5 * trgValueLapCharge[4 * i + 1];
         uL2[1] = 0.5 * trgValueLapCharge[4 * i + 2];
         uL2[2] = 0.5 * trgValueLapCharge[4 * i + 3];
-        trgValue[3 * i] += uL2[0];
+        trgValue[3 * i + 0] += uL2[0];
         trgValue[3 * i + 1] += uL2[1];
         trgValue[3 * i + 2] += uL2[2];
     }
@@ -689,9 +687,8 @@ void FMM_WrapperWall2D::treeLapCharge() {
     treePtrLapCharge->SetupFMM(&matrixLapCharge);
 }
 
-void FMM_WrapperWall2D::evalStokes(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
+void FMM_WrapperWall2D::evalStokes(const int ntrg, std::vector<double> *src_val) {
     const int nsrc = src_val->size() / 3;
-    const int ntrg = trg_val.size() / 3;
     // evaluate 1, Stokes FMM
     srcValueStokes.resize(3 * nsrc * 2);
     myTimer.start();
@@ -704,10 +701,10 @@ void FMM_WrapperWall2D::evalStokes(std::vector<double> &trg_val, const int n_trg
     }
 // image
 #pragma omp parallel for
-    for (int i = nsrc; i < 2 * nsrc; i++) {
-        srcValueStokes[3 * i] = -srcValueStokes[3 * (i - nsrc)];         // -fx
-        srcValueStokes[3 * i + 1] = -srcValueStokes[3 * (i - nsrc) + 1]; // -fy
-        srcValueStokes[3 * i + 2] = 0;                                   // fz =0
+    for (int i = 0; i < nsrc; i++) {
+        srcValueStokes[3 * (i + nsrc)] = -(*src_val)[3 * i];         // -fx
+        srcValueStokes[3 * (i + nsrc) + 1] = -(*src_val)[3 * i + 1]; // -fy
+        srcValueStokes[3 * (i + nsrc) + 2] = 0;                      // fz =0
     }
     trgValueStokes.resize(ntrg * 3);
     PtFMM_Evaluate(treePtrStokes, trgValueStokes, ntrg, &srcValueStokes, nullptr);
@@ -719,9 +716,8 @@ void FMM_WrapperWall2D::evalStokes(std::vector<double> &trg_val, const int n_trg
     myTimer.stop("Stokes Far Field");
 }
 
-void FMM_WrapperWall2D::evalLapDipole(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
+void FMM_WrapperWall2D::evalLapDipole(const int ntrg, std::vector<double> *src_val) {
     const int nsrc = src_val->size() / 3;
-    const int ntrg = trg_val.size() / 3;
     // evaluate 2, LaplaceDipole FMM
     // SL: src + image
     // DL: image only
@@ -748,6 +744,7 @@ void FMM_WrapperWall2D::evalLapDipole(std::vector<double> &trg_val, const int n_
         srcValueLapDipoleDL[3 * i + 1] = -y3 * (*src_val)[3 * i + 1];
         srcValueLapDipoleDL[3 * i + 2] = y3 * (*src_val)[3 * i + 2];
     }
+
     trgValueLapDipole.resize(ntrg * 4); // PGrad Kernel
     PtFMM_Evaluate(treePtrLapDipole, trgValueLapDipole, ntrg, &srcValueLapDipoleSL, &srcValueLapDipoleDL);
     myTimer.stop("Lap Dipole Near Field");
@@ -758,9 +755,8 @@ void FMM_WrapperWall2D::evalLapDipole(std::vector<double> &trg_val, const int n_
     myTimer.stop("Lap Dipole Far Field");
 }
 
-void FMM_WrapperWall2D::evalLapCharge(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
+void FMM_WrapperWall2D::evalLapCharge(const int ntrg, std::vector<double> *src_val) {
     const int nsrc = src_val->size() / 3;
-    const int ntrg = trg_val.size() / 3;
     // evaluate 3, LaplaceCharge FMM
     srcValueLapCharge.resize(nsrc * 2);
     myTimer.start();
@@ -776,6 +772,7 @@ void FMM_WrapperWall2D::evalLapCharge(std::vector<double> &trg_val, const int n_
         const double y3 = (srcCoordScaled[3 * i + 2] - 0.5);
         srcValueLapCharge[i + nsrc] = -y3 * (*src_val)[3 * i + 2]; // -fz
     }
+
     trgValueLapCharge.resize(ntrg * 4); // value + gradient
     PtFMM_Evaluate(treePtrLapCharge, trgValueLapCharge, ntrg, &srcValueLapCharge, nullptr);
     myTimer.stop("Lap Charge F Near Field");
@@ -851,7 +848,6 @@ void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord, const s
     const int ntrg = trgCoord.size() / 3;
 
     srcCoordScaled.resize(nsrc * 3);
-    srcImageCoordScaled.resize(nsrc * 3);
     trgCoordScaled.resize(ntrg * 3);
 
     if (pbc == PAXIS::PX) {
@@ -913,6 +909,7 @@ void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord, const s
     }
 
     // image of src
+    srcImageCoordScaled.resize(nsrc * 3);
 #pragma omp parallel for
     for (size_t i = 0; i < nsrc; i++) {
         srcImageCoordScaled[3 * i] = srcCoordScaled[3 * i];
@@ -924,53 +921,61 @@ void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord, const s
 void FMM_WrapperWall2D::treeSetupStokes() {
     // SL: src + image
     // DL: empty
-    const int ns = srcCoordScaled.size();
-    const int nt = trgCoordScaled.size();
+    const int nsrc = srcCoordScaled.size() / 3;
+    const int ntrg = trgCoordScaled.size() / 3;
 
-    treeDataStokes.src_coord.Resize(2 * ns);
+    treeDataStokes.src_coord.Resize(2 * 3 * nsrc);
 #pragma omp parallel for
-    for (int i = 0; i < ns; i++) {
+    for (int i = 0; i < 3 * nsrc; i++) {
         treeDataStokes.src_coord[i] = srcCoordScaled[i];
     }
 #pragma omp parallel for
-    for (int i = 0; i < ns; i++) {
-        treeDataStokes.src_coord[i + ns] = srcImageCoordScaled[i];
+    for (int i = 0; i < 3 * nsrc; i++) {
+        treeDataStokes.src_coord[i + 3 * nsrc] = srcImageCoordScaled[i];
     }
 
-    treeDataStokes.trg_coord.Resize(nt);
+    treeDataStokes.trg_coord.Resize(ntrg * 3);
 #pragma omp parallel for
-    for (int i = 0; i < nt; i++) {
+    for (int i = 0; i < 3 * ntrg; i++) {
         treeDataStokes.trg_coord[i] = trgCoordScaled[i];
     }
 
     treeDataStokes.surf_coord.Resize(0);
 
-    // printf("tree data lap charge\n");
+    treeDataStokes.src_value.Resize(3 * nsrc * 2);
+    treeDataStokes.trg_value.Resize(3 * ntrg);
+    treeDataStokes.surf_value.Resize(0);
+
+    // printf("tree data Stokes\n");
     // treePointDump(treeDataStokes);
 }
 void FMM_WrapperWall2D::treeSetupCharge() {
     // SL: src + image
     // DL: empty
-    const int ns = srcCoordScaled.size();
-    const int nt = trgCoordScaled.size();
+    const int nsrc = srcCoordScaled.size() / 3;
+    const int ntrg = trgCoordScaled.size() / 3;
 
-    treeDataLapCharge.src_coord.Resize(2 * ns);
+    treeDataLapCharge.src_coord.Resize(2 * 3 * nsrc);
 #pragma omp parallel for
-    for (int i = 0; i < ns; i++) {
+    for (int i = 0; i < 3 * nsrc; i++) {
         treeDataLapCharge.src_coord[i] = srcCoordScaled[i];
     }
 #pragma omp parallel for
-    for (int i = 0; i < ns; i++) {
-        treeDataLapCharge.src_coord[i + ns] = srcImageCoordScaled[i];
+    for (int i = 0; i < 3 * nsrc; i++) {
+        treeDataLapCharge.src_coord[i + 3 * nsrc] = srcImageCoordScaled[i];
     }
 
-    treeDataLapCharge.trg_coord.Resize(nt);
+    treeDataLapCharge.trg_coord.Resize(ntrg * 3);
 #pragma omp parallel for
-    for (int i = 0; i < nt; i++) {
+    for (int i = 0; i < 3 * ntrg; i++) {
         treeDataLapCharge.trg_coord[i] = trgCoordScaled[i];
     }
-
     treeDataLapCharge.surf_coord.Resize(0);
+
+    // treeDataLapCharge.src_value.Resize(nsrc * 2);
+    // treeDataLapCharge.trg_value.Resize(ntrg * 4);
+    // treeDataLapCharge.surf_value.Resize(0);
+
     // printf("tree data lap charge\n");
     // treePointDump(treeDataLapCharge);
 }
@@ -978,31 +983,35 @@ void FMM_WrapperWall2D::treeSetupCharge() {
 void FMM_WrapperWall2D::treeSetupDipole() {
     // SL: src + image
     // DL: image
+    const int nsrc = srcCoordScaled.size() / 3;
+    const int ntrg = trgCoordScaled.size() / 3;
 
-    const int ns = srcCoordScaled.size();
-    const int nt = trgCoordScaled.size();
-
-    treeDataLapDipole.src_coord.Resize(2 * ns);
+    treeDataLapDipole.src_coord.Resize(2 * 3 * nsrc);
 #pragma omp parallel for
-    for (int i = 0; i < ns; i++) {
+    for (int i = 0; i < 3 * nsrc; i++) {
         treeDataLapDipole.src_coord[i] = srcCoordScaled[i];
     }
 #pragma omp parallel for
-    for (int i = 0; i < ns; i++) {
-        treeDataLapDipole.src_coord[i + ns] = srcImageCoordScaled[i];
+    for (int i = 0; i < 3 * nsrc; i++) {
+        treeDataLapDipole.src_coord[i + 3 * nsrc] = srcImageCoordScaled[i];
     }
 
-    treeDataLapDipole.trg_coord.Resize(nt);
+    treeDataLapDipole.trg_coord.Resize(ntrg * 3);
 #pragma omp parallel for
-    for (int i = 0; i < nt; i++) {
+    for (int i = 0; i < 3 * ntrg; i++) {
         treeDataLapDipole.trg_coord[i] = trgCoordScaled[i];
     }
 
-    treeDataLapDipole.surf_coord.Resize(ns);
+    treeDataLapDipole.surf_coord.Resize(nsrc * 3);
 #pragma omp parallel for
-    for (int i = 0; i < ns; i++) {
+    for (int i = 0; i < 3 * nsrc; i++) {
         treeDataLapDipole.surf_coord[i] = srcImageCoordScaled[i];
     }
+
+    // treeDataLapDipole.src_value.Resize(nsrc * 2);
+    // treeDataLapDipole.trg_value.Resize(ntrg * 4);
+    // treeDataLapDipole.surf_value.Resize(nsrc * 3);
+
     // printf("tree data lap dipole\n");
     // treePointDump(treeDataLapDipole);
 }

@@ -111,9 +111,9 @@ class FMM_WrapperWall2D {
     void treeLapDipole();
     void treeLapCharge();
 
-    void evalStokes(std::vector<double> &, const int, std::vector<double> *);
-    void evalLapDipole(std::vector<double> &, const int, std::vector<double> *);
-    void evalLapCharge(std::vector<double> &, const int, std::vector<double> *);
+    void evalStokes(const int, std::vector<double> *);
+    void evalLapDipole(const int, std::vector<double> *);
+    void evalLapCharge(const int, std::vector<double> *);
 };
 
 #endif /* INCLUDE_FMMWRAPPER_H_ */

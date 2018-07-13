@@ -414,7 +414,7 @@ template <class T>
 inline const Kernel<T> &LaplaceLayerKernel<T>::PGrad() {
     // S2U - single-layer density — to — potential kernel (1 x 1)
     // D2U - double-layer density — to — potential kernel (1+3 x 1)
-    // S2UdU - single-layer density — to — potential & gradient (1 x 1)
+    // S2UdU - single-layer density — to — potential & gradient (1+3 x 1)
     // D2UdU - double-layer density — to — potential & gradient (1+3 x 1)
 
     static Kernel<T> lap_pker =
