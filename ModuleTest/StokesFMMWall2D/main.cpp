@@ -7,8 +7,6 @@
 
 #include "FMM/FMMWrapperWall2D.h"
 
-#include "ChebNodal.h"
-
 #include <chrono>
 #include <iostream>
 #include <random>
@@ -16,6 +14,7 @@
 
 #include <mpi.h>
 
+#include "Util/ChebNodal.h"
 #include "Util/EigenDef.hpp"
 #include "Util/cmdparser.hpp"
 

@@ -5,8 +5,8 @@ LIBRARY_DIRS =
 LIBRARIES = $(USERLIB)
 # Files
 
-SRC =   main.cpp ChebNodal.cpp ../../FMM/FMMWrapperWall2D.cpp
-INC =   ChebNodal.h ../../FMM/FMMWrapperWall2D.h ../../FMM/LaplaceLayerKernel.hpp
+SRC =   main.cpp ../../Util/ChebNodal.cpp ../../FMM/FMMWrapperWall2D.cpp
+INC =   ../../Util/ChebNodal.h ../../FMM/FMMWrapperWall2D.h ../../FMM/LaplaceLayerKernel.hpp
          
 # Definitions
 CXXFLAGS += -DFMMTIMING

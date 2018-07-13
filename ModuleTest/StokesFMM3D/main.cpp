@@ -5,9 +5,9 @@
  *      Author: wyan
  */
 
-#include "ChebNodal.h"
-#include "Ewald.hpp"
 #include "FMM/FMMWrapper.h"
+#include "Util/ChebNodal.h"
+#include "Util/Ewald.hpp"
 #include "Util/cmdparser.hpp"
 
 #include <chrono>

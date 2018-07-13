@@ -6,10 +6,9 @@
  */
 
 // TODO: complete 2P Ewald testing of RPY tensor
-#include "ChebNodal.h"
-#include "RPYFMMWrapper.h"
-#include "mpi.h"
-
+#include "FMM/RPYFMMWrapper.h"
+#include "Util/ChebNodal.h"
+#include "Util/Ewald.hpp"
 #include "Util/cmdparser.hpp"
 
 #include <chrono>
@@ -17,8 +16,8 @@
 #include <random>
 #include <vector>
 
-#include "Eigen/Dense"
-#include "Ewald.hpp"
+#include <Eigen/Dense>
+#include <mpi.h>
 
 void distributePts(std::vector<double> &pts) {
     int myRank;
