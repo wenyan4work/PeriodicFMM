@@ -19,7 +19,7 @@
 #include "Util/cmdparser.hpp"
 
 #define EPS (1e-12) // make sure EPS/10 is still valid
-#define MAXP 10
+#define MAXP 16
 
 void distributePts(std::vector<double> &pts) {
     int myRank;
