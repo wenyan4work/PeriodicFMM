@@ -29,17 +29,14 @@ class FMM_WrapperWall2D {
 
     void FMM_DataClear();
 
-    void FMM_Evaluate(std::vector<double> &, const int, std::vector<double> *,
-                      std::vector<double> *surf_coordPtr = NULL);
-    void FMM_UpdateTree(const std::vector<double> &, const std::vector<double> &,
-                        const std::vector<double> *surf_valPtr = NULL);
+    void FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val);
+
+    void FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord);
 
     void FMM_SetBox(double, double, double, double, double, double);
 
   private:
-#ifdef FMMTIMING
     Timer myTimer;
-#endif
     double xlow, xhigh; // box
     double ylow, yhigh;
     double zlow, zhigh;
@@ -50,16 +47,11 @@ class FMM_WrapperWall2D {
     pvfmm::PtFMM_Data treeDataStokes;
 
     // for Laplace Charge FMM
-    pvfmm::PtFMM matrixLapChargeF;
-    pvfmm::PtFMM_Tree *treePtrLapChargeF;
-    pvfmm::PtFMM_Data treeDataLapChargeF;
+    pvfmm::PtFMM matrixLapCharge;
+    pvfmm::PtFMM_Tree *treePtrLapCharge;
+    pvfmm::PtFMM_Data treeDataLapCharge;
 
-    // for Laplace Charge FMM
-    pvfmm::PtFMM matrixLapChargeFZ;
-    pvfmm::PtFMM_Tree *treePtrLapChargeFZ;
-    pvfmm::PtFMM_Data treeDataLapChargeFZ;
-
-    // for Laplace Dipole FMM
+    // for Laplace Charge + Dipole FMM
     pvfmm::PtFMM matrixLapDipole;
     pvfmm::PtFMM_Tree *treePtrLapDipole;
     pvfmm::PtFMM_Data treeDataLapDipole;
@@ -75,25 +67,24 @@ class FMM_WrapperWall2D {
 
     double *pm2lStokes;    // the periodizing operator for Stokes kernel
     double *pm2lLapCharge; // the periodizing operator for Laplace Charge kernel
-    double *pm2lLapDipole; // the periodizing operator for Laplace Dipole kernel
 
     void calcMStokes();
 
-    void calcMLapCharge(int); // 0 for F, 1 for FZ
-
-    void calcMLapDipole();
+    void calcMLapCharge(int); // 0 for charge, 1 for dipole
 
     std::vector<double> srcValueStokes;
     std::vector<double> trgValueStokes; // stokes value only
 
-    std::vector<double> srcValueLapDipole; // dipole value and gradient
+    std::vector<double> srcValueLapCharge; // charge F value and gradient
+    std::vector<double> trgValueLapCharge; // charge F value and gradient
+
+    std::vector<double> srcValueLapDipoleSL; // dipole value and gradient
+    std::vector<double> srcValueLapDipoleDL; // dipole value and gradient
     std::vector<double> trgValueLapDipole; // dipole value and gradient
 
-    std::vector<double> srcValueLapChargeF; // charge F value and gradient
-    std::vector<double> trgValueLapChargeF; // charge F value and gradient
-
-    std::vector<double> srcValueLapChargeFZ; // charge FZ value and gradient
-    std::vector<double> trgValueLapChargeFZ; // charge FZ value and gradient
+    std::vector<double> srcCoordScaled;
+    std::vector<double> srcImageCoordScaled;
+    std::vector<double> trgCoordScaled;
 
     int pEquiv;
     int equivN;
@@ -105,22 +96,24 @@ class FMM_WrapperWall2D {
     // = surface(pEquiv, (double *) &(pCenterLCheck[0]), scaleLCheck, 0);
     // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
-    void treeSetup(pvfmm::PtFMM_Data &, const std::vector<double> &, const std::vector<double> &, bool);
+    void scalePoints(const std::vector<double> &srcCoord, const std::vector<double> &trgCoord);
+
+    void treeSetupStokes(); // SL only
+    void treeSetupDipole(); // SL+DL
+    void treeSetupCharge(); // SL only
 
     void treePointDump(const pvfmm::PtFMM_Data &);
 
     void sumImageSystem(std::vector<double> &);
 
     // small private functions for timing
-    void treeStokes(const std::vector<double> &, const std::vector<double> &);
-    void treeLapDipole(const std::vector<double> &, const std::vector<double> &);
-    void treeLapChargeF(const std::vector<double> &, const std::vector<double> &);
-    void treeLapChargeFZ(const std::vector<double> &, const std::vector<double> &);
+    void treeStokes();
+    void treeLapDipole();
+    void treeLapCharge();
 
-    void evalStokes(std::vector<double> &, const int, std::vector<double> *);
-    void evalLapDipole(std::vector<double> &, const int, std::vector<double> *);
-    void evalLapChargeF(std::vector<double> &, const int, std::vector<double> *);
-    void evalLapChargeFZ(std::vector<double> &, const int, std::vector<double> *);
+    void evalStokes(const int, std::vector<double> *);
+    void evalLapDipole(const int, std::vector<double> *);
+    void evalLapCharge(const int, std::vector<double> *);
 };
 
 #endif /* INCLUDE_FMMWRAPPER_H_ */

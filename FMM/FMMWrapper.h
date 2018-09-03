@@ -29,17 +29,14 @@ class FMM_Wrapper {
 
     void FMM_DataClear();
 
-    void FMM_Evaluate(std::vector<double> &, const int, std::vector<double> *,
-                      std::vector<double> *surf_coordPtr = NULL);
-    void FMM_UpdateTree(const std::vector<double> &, const std::vector<double> &,
-                        const std::vector<double> *surf_valPtr = NULL);
+    void FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val);
+
+    void FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord);
 
     void FMM_SetBox(double, double, double, double, double, double);
 
   private:
-#ifdef FMMTIMING
     Timer myTimer;
-#endif
     double xlow, xhigh; // box
     double ylow, yhigh;
     double zlow, zhigh;

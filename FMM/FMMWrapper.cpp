@@ -78,8 +78,8 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
 FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_)
     : mult_order(mult_order), max_pts(max_pts), init_depth(init_depth), pbc(pbc_), xlow(0), xhigh(1), ylow(0), yhigh(1),
       zlow(0), zhigh(1), scaleFactor(1), xshift(0), yshift(0), zshift(0)
-#ifdef FMMTIMING
-      , 
+#ifndef FMMTIMING
+      ,
       myTimer(false)
 #endif
 {
@@ -310,11 +310,9 @@ void FMM_Wrapper::FMM_SetBox(double xlow_, double xhigh_, double ylow_, double y
     }
 }
 
-void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord,
-                                 const std::vector<double> *surf_coordPtr) {
-#ifdef FMMTIMING
+void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord) {
+
     myTimer.start();
-#endif
 
     int myRank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -435,11 +433,10 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
 #endif
         }
     }
-    if (surf_coordPtr != nullptr) {
+    {
         // set to NULL. currently no support for surf source
         const int nsurf = 0;
         treeData.surf_coord.Resize(nsurf * 3);
-        surf_coordPtr = nullptr;
     }
 
     // Set target points.
@@ -569,24 +566,17 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
 
     treePtr->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace : pvfmm::Periodic);
     treePtr->SetupFMM(&matrix);
-#ifdef FMMTIMING
     myTimer.stop("Stokes3D FMM tree setup");
-#endif
 
 #ifdef FMMDEBUG
     std::cout << "SetupFMM Complete" << std::endl;
 #endif
 }
 
-void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val,
-                               std::vector<double> *surf_valPtr) {
+void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
     FMM_DataClear();
     if (src_val == nullptr) {
         printf("Error, no source value\n");
-        return;
-    }
-    if (surf_valPtr != nullptr) {
-        printf("Error, surfval not implemented\n");
         return;
     }
 
@@ -641,13 +631,9 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
         // no rotate
     }
 
-#ifdef FMMTIMING
     myTimer.start();
-#endif
-    PtFMM_Evaluate(treePtr, trg_val, n_trg, src_val, surf_valPtr);
-#ifdef FMMTIMING
+    PtFMM_Evaluate(treePtr, trg_val, n_trg, src_val, nullptr);
     myTimer.stop("Stokes Near Field");
-#endif
 
 #ifdef FMMDEBUG
     std::cout << "before pxyz" << trg_val[0] << std::endl;
@@ -655,14 +641,10 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
     std::cout << trg_val[2] << std::endl;
 #endif
     if (pbc != NONE) {
-#ifdef FMMTIMING
         myTimer.start();
-#endif
         // calcM(treeData.trg_coord, trg_val, *src_val);
         calcMStokes(trg_val);
-#ifdef FMMTIMING
         myTimer.stop("Stokes Far Field");
-#endif
     }
 
     // scale and rotate back

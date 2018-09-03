@@ -18,6 +18,8 @@
 #include <Eigen/Dense>
 #include <mpi.h>
 
+#define MAXP 16
+
 void distributePts(std::vector<double> &pts) {
     int myRank;
     int nProcs;
@@ -126,7 +128,7 @@ void calcTrueValueFMM(std::vector<double> &trg_value_true, const std::vector<dou
     std::cout << "Skip O(N^2) true value calculation for large system" << std::endl;
     std::cout << "Use FMM p=16 as 'true' value                       " << std::endl;
     std::cout << "***************************************************" << std::endl;
-    FMM_Wrapper myFMM(16, 1000, 0, pset);
+    FMM_Wrapper myFMM(16, 4000, 0, pset);
     myFMM.FMM_SetBox(shift, shift + box, shift, shift + box, shift, shift + box);
     myFMM.FMM_UpdateTree(src_coord, trg_coord);
     myFMM.FMM_Evaluate(trg_value_true, trg_coord.size() / 3, &src_value);
@@ -457,7 +459,7 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std
     distributePts(trg_coord);
     distributePts(trg_value);
 
-    FMM_Wrapper myFMM(p, 1000, 0, pset);
+    FMM_Wrapper myFMM(p, 4000, 0, pset);
     myFMM.FMM_SetBox(shift, shift + box, shift, shift + box, shift, shift + box);
     std::cout << "FMM" << std::endl;
 
@@ -602,7 +604,7 @@ int main(int argc, char **argv) {
 
     // send to test
     double boxfac = pow(box / 2, 2); // for surface integral, scale the cheb weight from [-1,1] to box length
-    for (int p = 6; p <= 16; p += 2) {
+    for (int p = 6; p <= MAXP; p += 2) {
         testFMM(trg_value, trg_coord, src_value, src_coord, trg_true, p, box, shift, pset);
         if (parser.get<int>("R") <= 0 && myRank == 0) {
             const int chebN = parser.get<int>("T");
