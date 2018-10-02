@@ -17,11 +17,15 @@
 
 class FMM_Wrapper {
   public:
-    enum PAXIS { NONE = 0, PX = 1, PY = 2, PZ = 3, PXY = 4, PXZ = 5, PYZ = 6, PXYZ = 7 };
+    enum PAXIS { NONE = 0, PX = 1, PXY = 4, PXYZ = 7 };
 
     const PAXIS pbc;
+    // kernel function dimension for source and target
+    const int SDim;
+    const int TDim;
 
-    FMM_Wrapper(int mult_order = 10, int max_pts = 2000, int init_depth = 0, PAXIS pbc_ = PAXIS::NONE);
+    FMM_Wrapper(int mult_order = 10, int max_pts = 2000, int init_depth = 0, PAXIS pbc_ = PAXIS::NONE,
+                bool reg = false);
 
     ~FMM_Wrapper();
 
@@ -52,6 +56,7 @@ class FMM_Wrapper {
     const int mult_order;
     const int max_pts;
     const int init_depth;
+    const bool regularized;
 
     double *readM2LMat(const char *, const int);
 
