@@ -90,9 +90,9 @@ void stokes_regvel_uKernel(Matrix<Real_t> &src_coord, Matrix<Real_t> &src_value,
                 vz = add_intrin(vz, mul_intrin(add_intrin(mul_intrin(r2reg2, fz), mul_intrin(dz, commonCoeff)), rinv3));
             }
 
-            vx = add_intrin(mul_intrin(vx, facv), load_intrin<Vec_t>(&trg_value[1][t]));
-            vy = add_intrin(mul_intrin(vy, facv), load_intrin<Vec_t>(&trg_value[2][t]));
-            vz = add_intrin(mul_intrin(vz, facv), load_intrin<Vec_t>(&trg_value[3][t]));
+            vx = add_intrin(mul_intrin(vx, facv), load_intrin<Vec_t>(&trg_value[0][t]));
+            vy = add_intrin(mul_intrin(vy, facv), load_intrin<Vec_t>(&trg_value[1][t]));
+            vz = add_intrin(mul_intrin(vz, facv), load_intrin<Vec_t>(&trg_value[2][t]));
 
             store_intrin(&trg_value[0][t], vx);
             store_intrin(&trg_value[1][t], vy);
@@ -751,45 +751,10 @@ template <class T>
 inline const Kernel<T> &StokesRegKernel<T>::Vel() {
     static Kernel<T> stk_ker = StokesKernel<T>::velocity();
     static Kernel<T> s2t_ker =
-        BuildKernel<T, stokes_regvel<T, NEWTON_ITE>>("stokes_regvel", 3, std::pair<int, int>(4, 3), &stk_ker,
-                                                       &stk_ker, NULL, &stk_ker, &stk_ker, NULL, &stk_ker, NULL);
+        BuildKernel<T, stokes_regvel<T, NEWTON_ITE>>("stokes_regvel", 3, std::pair<int, int>(4, 3), NULL, NULL, NULL,
+                                                     &stk_ker, &stk_ker, &stk_ker, &stk_ker, &stk_ker);
     return s2t_ker;
 }
-
-
-
-// template <class T>
-// inline const Kernel<T> &StokesSingleLayerKernel<T>::PVel() {
-//     static Kernel<T> s2t_ker = BuildKernel<T, stokes_pvel<T, NEWTON_ITE>>("stokes_pvel", 3, std::pair<int, int>(3, 4));
-//     return s2t_ker;
-// }
-
-// template <class T>
-// inline const Kernel<T> &StokesSingleLayerKernel<T>::PVelGrad() {
-//     static Kernel<T> stk_ker = BuildKernel<T, stokes_pvel<T, NEWTON_ITE>>("stokes_pvel", 3, std::pair<int, int>(3, 4));
-//     static Kernel<T> s2t_ker =
-//         BuildKernel<T, stokes_pvelgrad<T, NEWTON_ITE>>("stokes_pvelgrad", 3, std::pair<int, int>(3, 16), &stk_ker,
-//                                                        &stk_ker, NULL, &stk_ker, &stk_ker, NULL, &stk_ker, NULL);
-//     return s2t_ker;
-// }
-
-// template <class T>
-// inline const Kernel<T> &StokesSingleLayerKernel<T>::Traction() {
-//     static Kernel<T> stk_ker = BuildKernel<T, stokes_pvel<T, NEWTON_ITE>>("stokes_pvel", 3, std::pair<int, int>(3, 4));
-//     static Kernel<T> s2t_ker =
-//         BuildKernel<T, stokes_traction<T, NEWTON_ITE>>("stokes_traction", 3, std::pair<int, int>(3, 9), &stk_ker,
-//                                                        &stk_ker, NULL, &stk_ker, &stk_ker, NULL, &stk_ker, NULL);
-//     return s2t_ker;
-// }
-
-// template <class T>
-// inline const Kernel<T> &StokesSingleLayerKernel<T>::PVelLaplacian() {
-//     static Kernel<T> stk_ker = BuildKernel<T, stokes_pvel<T, NEWTON_ITE>>("stokes_pvel", 3, std::pair<int, int>(3, 4));
-//     static Kernel<T> s2t_ker = BuildKernel<T, stokes_pvellaplacian<T, NEWTON_ITE>>(
-//         "stokes_pvellaplacian", 3, std::pair<int, int>(3, 7), &stk_ker, &stk_ker, NULL, &stk_ker, &stk_ker, NULL,
-//         &stk_ker, NULL);
-//     return s2t_ker;
-// }
 
 } // namespace pvfmm
 #endif // STOKESSINGLELAYERKERNEL_HPP

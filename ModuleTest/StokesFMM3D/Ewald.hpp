@@ -44,6 +44,7 @@ inline void Gkernel(const Eigen::Vector3d &target, const Eigen::Vector3d &source
     answer = part1 + part2;
 }
 
+// periodic in X direction for a unit cubic box [0,1)^3
 inline void Gkernel1D(const Eigen::Vector3d &target, Eigen::Matrix3d &G) {
     const int Nsum = 10000;
     G.setZero();
@@ -51,8 +52,8 @@ inline void Gkernel1D(const Eigen::Vector3d &target, Eigen::Matrix3d &G) {
     Eigen::Matrix3d Gtemp2;
     Gkernel(target, Eigen::Vector3d(0, 0, 0), G);
     for (int i = 1; i < Nsum + 1; i++) {
-        Gkernel(target, Eigen::Vector3d(0, 0, i), Gtemp1);
-        Gkernel(target, Eigen::Vector3d(0, 0, -i), Gtemp2);
+        Gkernel(target, Eigen::Vector3d(i, 0, 0), Gtemp1);
+        Gkernel(target, Eigen::Vector3d(-i, 0, 0), Gtemp2);
         G += (Gtemp1 + Gtemp2);
     }
 }
@@ -113,6 +114,7 @@ inline Eigen::Matrix3d BEW(const double xi, const Eigen::Vector3d &kvec) {
  return (np.real(wave)+real)
 
  * */
+// periodic in XYZ direction for a unit cubic box [0,1)^3
 inline void GkernelEwald3D(const Eigen::Vector3d &rvecIn, Eigen::Matrix3d &Gsum, double box) {
     const double xi = 2;
     Eigen::Vector3d rvec = rvecIn;
@@ -269,7 +271,7 @@ inline void Qkk(const Eigen::Vector3d &kvec, double xi, double z, Eigen::Matrix3
 //	return wavek0;
 //
 //}
-
+// periodic in XY direction for a unit cubic box [0,1)^3
 inline void GkernelEwald2D(const Eigen::Vector3d &rvecIn, Eigen::Matrix3d &Gsum) {
     const double xi = 2;
     Eigen::Vector3d rvec = rvecIn;

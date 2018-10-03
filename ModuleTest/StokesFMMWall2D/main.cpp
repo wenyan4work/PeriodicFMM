@@ -22,107 +22,6 @@
 #define EPS (1e-12) // make sure EPS/10 is still valid
 #define MAXP 16
 
-void distributePts(std::vector<double> &pts) {
-    int myRank;
-    int nProcs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcs);
-    int ptsGlobalSize;
-    if (myRank == 0) {
-        ptsGlobalSize = pts.size();
-        MPI_Bcast(&ptsGlobalSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        // std::cout << "rank " << myRank << " global size" << ptsGlobalSize << std::endl;
-    } else {
-        ptsGlobalSize = 0;
-        MPI_Bcast(&ptsGlobalSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        // std::cout << "rank " << myRank << " global size" << ptsGlobalSize << std::endl;
-    }
-
-    // bcast to all
-    pts.resize(ptsGlobalSize);
-    MPI_Bcast(pts.data(), ptsGlobalSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    // each take a portion
-    const int nPts = ptsGlobalSize / 3;
-    // inclusive low
-    int indexlow = 3 * floor(myRank * nPts / static_cast<double>(nProcs));
-    // non-inclusive high
-    int indexhigh = 3 * floor((myRank + 1) * nPts / static_cast<double>(nProcs));
-    if (myRank == nProcs - 1) {
-        indexhigh = ptsGlobalSize;
-    }
-    std::vector<double>::const_iterator first = pts.begin() + indexlow;
-    std::vector<double>::const_iterator last = pts.begin() + indexhigh;
-    std::vector<double> newVec(first, last);
-    pts = std::move(newVec);
-}
-
-void collectPts(std::vector<double> &pts) {
-
-    int myRank;
-    int nProcs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcs);
-    int ptsLocalSize = pts.size();
-    int ptsGlobalSize = 0;
-
-    std::vector<int> recvSize(0);
-    std::vector<int> displs(0);
-    if (myRank == 0) {
-        recvSize.resize(nProcs);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Gather(&ptsLocalSize, 1, MPI_INT, recvSize.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
-    // MPI_Gather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
-    // void *recvbuf, int recvcount, MPI_Datatype recvtype, int root,
-    // MPI_Comm comm)
-    for (auto &p : recvSize) {
-        ptsGlobalSize += p;
-    }
-    // std::cout << "rank " << myRank << " globalSize " << ptsGlobalSize << std::endl;
-    displs.resize(recvSize.size());
-    if (displs.size() > 0) {
-        displs[0] = 0;
-        for (int i = 1; i < displs.size(); i++) {
-            displs[i] = recvSize[i - 1] + displs[i - 1];
-        }
-    }
-
-    // int MPI_Gatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
-    // void *recvbuf, const int recvcounts[], const int displs[], MPI_Datatype recvtype,
-    // int root, MPI_Comm comm)
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    std::vector<double> ptsRecv(ptsGlobalSize); // size=0 on rank !=0
-    // std::cout << "globalSize " << ptsGlobalSize << std::endl;
-    if (myRank == 0) {
-        MPI_Gatherv(pts.data(), pts.size(), MPI_DOUBLE, ptsRecv.data(), recvSize.data(), displs.data(), MPI_DOUBLE, 0,
-                    MPI_COMM_WORLD);
-    } else {
-        MPI_Gatherv(pts.data(), pts.size(), MPI_DOUBLE, NULL, NULL, NULL, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    }
-
-    pts = std::move(ptsRecv);
-}
-
-class Trapz { // map from (-1,1)
-  public:
-    Trapz(int N_) : N(N_) {
-        points.resize(N_ + 1);
-        weights.resize(N_ + 1);
-
-        for (int i = 0; i < N_ + 1; i++) {
-            points[i] = -1 + 2.0 * i / N_;
-            weights[i] = 2.0 / N_;
-        }
-        weights[0] *= 0.5;
-        weights.back() *= 0.5;
-    }
-    int N;
-    std::vector<double> points;
-    std::vector<double> weights;
-};
-
 void runFMM(std::vector<double> &trgValueWall, std::vector<double> &trgCoordWall, std::vector<double> &trgValuePBC,
             std::vector<double> &trgCoordPBC, std::vector<double> &trgValueSample, std::vector<double> &trgCoordSample,
             std::vector<double> &src_value, std::vector<double> &src_coord, const int p, const double box,
@@ -137,9 +36,6 @@ void runFMM(std::vector<double> &trgValueWall, std::vector<double> &trgCoordWall
         std::cout << "MPI Procs: " << nProcs << std::endl;
         std::cout << "omp threads: " << omp_get_max_threads() << std::endl;
     }
-
-    //    distributePts(src_coord);
-    //    distributePts(src_value);
 
     FMM_WrapperWall2D myFMM(p, 4000, 0, pset);
     myFMM.FMM_SetBox(shift, shift + box, shift, shift + box, shift, shift + box * 0.5 * (1 - EPS / 10));
@@ -165,8 +61,6 @@ void runFMM(std::vector<double> &trgValueWall, std::vector<double> &trgCoordWall
     myFMM.FMM_Evaluate(trgValueSample, trgCoordSample.size() / 3, &src_value);
     std::cout << "Tree Evaluated" << std::endl;
 
-    //    collectPts(src_coord);
-    //    collectPts(src_value);
     MPI_Barrier(MPI_COMM_WORLD);
     return;
 }

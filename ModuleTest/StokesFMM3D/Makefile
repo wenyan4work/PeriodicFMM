@@ -5,8 +5,8 @@ LIBRARY_DIRS =
 LIBRARIES = $(USERLIB)
 # Files
 
-SRC =   main.cpp ChebNodal.cpp ../../FMM/FMMWrapper.cpp
-INC =   ChebNodal.h Ewald.hpp ../../FMM/FMMWrapper.h
+SRC =   main.cpp ChebNodal.cpp regularized_stokeslet.cpp ../../FMM/FMMWrapper.cpp
+INC =   ChebNodal.h Ewald.hpp regularized_stokeslet.hpp ../../FMM/FMMWrapper.h
          
 # Definitions
 CXXFLAGS += -DFMMTIMING
