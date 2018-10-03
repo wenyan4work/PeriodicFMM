@@ -23,9 +23,24 @@ class Timer {
     bool work = true;
 
   public:
-    explicit Timer() = default;
+    Timer() = default;
 
-    explicit Timer(bool work_) : Timer() { work = work_; }
+    Timer(bool work_) : Timer() { work = work_; }
+
+    Timer(const Timer &other) {
+        startTime = other.startTime;
+        stopTime = other.stopTime;
+        logfile << other.logfile.str();
+        work = other.work;
+    };
+
+    const Timer &operator=(const Timer &other) {
+        startTime = other.startTime;
+        stopTime = other.stopTime;
+        logfile << other.logfile.str();
+        work = other.work;
+        return *this;
+    }
 
     ~Timer() = default;
 

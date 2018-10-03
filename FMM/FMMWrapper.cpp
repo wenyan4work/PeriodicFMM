@@ -6,6 +6,7 @@
  */
 
 #include "FMMWrapper.h"
+#include "StokesRegSingleLayerKernel.hpp"
 
 #include <cassert>
 #include <limits>
@@ -15,6 +16,7 @@
 
 extern pvfmm::PeriodicType pvfmm::periodicType;
 
+constexpr double pi = 3.1415926535897932384626433;
 // return fraction part between [0,1)
 /*
  * This function is only applied in the PERIODIC DIRECTION
@@ -75,9 +77,10 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     return coord;
 }
 
-FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_)
+FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_, bool reg)
     : mult_order(mult_order), max_pts(max_pts), init_depth(init_depth), pbc(pbc_), xlow(0), xhigh(1), ylow(0), yhigh(1),
-      zlow(0), zhigh(1), scaleFactor(1), xshift(0), yshift(0), zshift(0)
+      zlow(0), zhigh(1), scaleFactor(1), xshift(0), yshift(0), zshift(0), regularized(reg), SDim(reg ? 4 : 3), TDim(3),
+      kernelG(reg ? pvfmm::StokesRegKernel<double>::Vel() : pvfmm::StokesKernel<double>::velocity())
 #ifndef FMMTIMING
       ,
       myTimer(false)
@@ -89,26 +92,14 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
     case PAXIS::NONE:
         pvfmm::periodicType = pvfmm::PeriodicType::NONE;
         break;
-    case PAXIS::PXYZ:
-        pvfmm::periodicType = pvfmm::PeriodicType::PXYZ;
-        break;
     case PAXIS::PX:
         pvfmm::periodicType = pvfmm::PeriodicType::PX;
-        break;
-    case PAXIS::PY:
-        pvfmm::periodicType = pvfmm::PeriodicType::PX; // use axis rotation
-        break;
-    case PAXIS::PZ:
-        pvfmm::periodicType = pvfmm::PeriodicType::PX; // use axis rotation
         break;
     case PAXIS::PXY:
         pvfmm::periodicType = pvfmm::PeriodicType::PXY;
         break;
-    case PAXIS::PXZ:
-        pvfmm::periodicType = pvfmm::PeriodicType::PXY; // use axis rotation
-        break;
-    case PAXIS::PYZ:
-        pvfmm::periodicType = pvfmm::PeriodicType::PXY; // use axis rotation
+    case PAXIS::PXYZ:
+        pvfmm::periodicType = pvfmm::PeriodicType::PXYZ;
         break;
     }
     pm2l = nullptr;
@@ -140,7 +131,7 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
                 exit(1);
                 break;
             }
-        } else if (pbc == PAXIS::PX || pbc == PAXIS::PY || pbc == PAXIS::PZ) {
+        } else if (pbc == PAXIS::PX) {
             switch (mult_order) {
             case 6:
                 pm2l = readM2LMat("M2LStokes1D3Dp6", 6);
@@ -165,7 +156,7 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
                 exit(1);
                 break;
             }
-        } else if (pbc == PAXIS::PXY || pbc == PAXIS::PXZ || pbc == PAXIS::PYZ) {
+        } else if (pbc == PAXIS::PXY) {
             switch (mult_order) {
             case 6:
                 pm2l = readM2LMat("M2LStokes2D3Dp6", 6);
@@ -206,9 +197,14 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
     }
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    const pvfmm::Kernel<double> &kernel_fn = pvfmm::StokesKernel<double>::velocity();
-
-    matrix.Initialize(mult_order, comm, &kernel_fn);
+    // if (regularized) {
+    //     const pvfmm::Kernel<double> &kernel_fn = pvfmm::StokesRegKernel<double>::Vel();
+    //     matrix.Initialize(mult_order, comm, &kernel_fn);
+    // } else {
+    //     const pvfmm::Kernel<double> &kernel_fn = pvfmm::StokesKernel<double>::velocity();
+    //     matrix.Initialize(mult_order, comm, &kernel_fn);
+    // }
+    matrix.Initialize(mult_order, comm, &kernelG);
     treePtr = nullptr;
 
 #ifdef FMMDEBUG
@@ -257,35 +253,9 @@ void FMM_Wrapper::FMM_SetBox(double xlow_, double xhigh_, double ylow_, double y
             exit(1);
         }
         break;
-    case PAXIS::PY:
-        if (ylen < xlen || ylen < zlen) {
-            std::cout << "periodic box size error" << std::endl;
-            exit(1);
-        }
-        break;
-    case PAXIS::PZ:
-        if (zlen < xlen || zlen < ylen) {
-            std::cout << "periodic box size error" << std::endl;
-            exit(1);
-        }
-        break;
     case PAXIS::PXY:
         // for PXY,PXZ,PYZ, periodic direcitons must have equal size, and larger than the third direction
         if (fabs(xlen - ylen) < eps && xlen >= zlen) {
-        } else {
-            std::cout << "periodic box size error" << std::endl;
-            exit(1);
-        }
-        break;
-    case PAXIS::PXZ:
-        if (fabs(xlen - zlen) < eps && xlen >= ylen) {
-        } else {
-            std::cout << "periodic box size error" << std::endl;
-            exit(1);
-        }
-        break;
-    case PAXIS::PYZ:
-        if (fabs(zlen - ylen) < eps && zlen >= xlen) {
         } else {
             std::cout << "periodic box size error" << std::endl;
             exit(1);
@@ -330,224 +300,101 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
     treeData.max_depth = 15;
     treeData.max_pts = max_pts;
 
+    // shadow member variable. sometimes openmp has bugs
+    const double scaleFactor = this->scaleFactor;
+
     // Set source points, with scale
-    //	treeData.src_coord = src_coord;
     const int nsrc = src_coord.size() / 3;
     treeData.src_coord.Resize(nsrc * 3);
-    if (pbc == PAXIS::PY) {
-// rotate y axis to x axis to use the x 1d periodic data
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
-                      << std::endl;
-#endif
-        }
-    } else if (pbc == PAXIS::PXZ) {
-// rotate y axis to z axis to use the xy 2d periodic data
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
-                      << std::endl;
-#endif
-        }
-    } else if (pbc == PAXIS::PX) {
-// no rotation
+    // No rotation
+    if (pbc == PAXIS::PX) {
 #pragma omp parallel for
         for (size_t i = 0; i < nsrc; i++) {
             treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
             treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
             treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
-                      << std::endl;
-#endif
         }
-    } else if (pbc == PAXIS::PYZ) {
-// rotate x axis to z axis
+    } else if (pbc == PAXIS::PXY) {
 #pragma omp parallel for
         for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
-                      << std::endl;
-#endif
+            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
+            treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
         }
-
     } else if (pbc == PAXIS::PXYZ) {
-// no rotate
 #pragma omp parallel for
         for (size_t i = 0; i < nsrc; i++) {
             treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
             treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
             treeData.src_coord[3 * i + 2] = fracwrap((src_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
-                      << std::endl;
-#endif
-        }
-    } else if (pbc == PAXIS::PZ) {
-// rotate z to x
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i + 1] = ((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
-                      << std::endl;
-#endif
-        }
-    } else if (pbc == PAXIS::PXY) {
-// no rotate
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
-                      << std::endl;
-#endif
         }
     } else {
-        assert(pbc == PAXIS::NONE);
-// no rotate
 #pragma omp parallel for
         for (size_t i = 0; i < nsrc; i++) {
             treeData.src_coord[3 * i] = ((src_coord[3 * i] + xshift) * scaleFactor);
             treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
             treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
-                      << std::endl;
-#endif
         }
     }
-    {
-        // set to NULL. currently no support for surf source
-        const int nsurf = 0;
-        treeData.surf_coord.Resize(nsurf * 3);
+
+#ifdef FMMDEBUG
+    std::cout << "treeData.src_coord" << std::endl;
+    for (size_t i = 0; i < nsrc; i++) {
+        std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
+                  << std::endl;
     }
+#endif
+
+    // set to NULL. currently no support for surf source
+    treeData.surf_coord.Resize(0);
 
     // Set target points.
-    // use the same rotation and periodic wrap as source
-
+    // use the same periodic wrap as source
     const int ntrg = trg_coord.size() / 3;
     treeData.trg_coord.Resize(ntrg * 3);
-    if (pbc == PAXIS::PY) {
-// rotate y axis to x axis to use the x 1d periodic data
-#pragma omp parallel for
-        for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
-                      << std::endl;
-#endif
-        }
-    } else if (pbc == PAXIS::PXZ) {
-// rotate y axis to z axis to use the xy 2d periodic data
-#pragma omp parallel for
-        for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
-                      << std::endl;
-#endif
-        }
-    } else if (pbc == PAXIS::PX) {
-// no rotation
+    // No rotation
+    if (pbc == PAXIS::PX) {
 #pragma omp parallel for
         for (size_t i = 0; i < ntrg; i++) {
             treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
             treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
             treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
-                      << std::endl;
-#endif
         }
-    } else if (pbc == PAXIS::PYZ) {
-// rotate x axis to z axis
+    } else if (pbc == PAXIS::PXY) {
 #pragma omp parallel for
         for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
-                      << std::endl;
-#endif
+            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
         }
-
     } else if (pbc == PAXIS::PXYZ) {
-// no rotate
 #pragma omp parallel for
         for (size_t i = 0; i < ntrg; i++) {
             treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
             treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
             treeData.trg_coord[3 * i + 2] = fracwrap((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
-                      << std::endl;
-#endif
-        }
-    } else if (pbc == PAXIS::PZ) {
-// rotate z to x
-#pragma omp parallel for
-        for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
-                      << std::endl;
-#endif
-        }
-    } else if (pbc == PAXIS::PXY) {
-// no rotate
-#pragma omp parallel for
-        for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
-                      << std::endl;
-#endif
         }
     } else {
-        assert(pbc == PAXIS::NONE);
-// no rotate
 #pragma omp parallel for
         for (size_t i = 0; i < ntrg; i++) {
             treeData.trg_coord[3 * i] = ((trg_coord[3 * i] + xshift) * scaleFactor);
             treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
             treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-#ifdef FMMDEBUG
-            std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
-                      << std::endl;
-#endif
         }
     }
 
-    // prevent PVFMM from breaking down with coord=1
+#ifdef FMMDEBUG
+    std::cout << "treeData.trg_coord" << std::endl;
+    for (size_t i = 0; i < ntrg; i++) {
+        std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
+                  << std::endl;
+    }
+#endif
+
+    // prevent PVFMM from breaking down with coord>=1
     const int NS = treeData.src_coord.Dim();
     const int NT = treeData.trg_coord.Dim();
-    const double eps = std::numeric_limits<double>::epsilon() * 100;
+    const double eps = std::numeric_limits<double>::epsilon() * 10 * std::max(scaleFactor, 1 / scaleFactor);
 #pragma omp parallel for
     for (int i = 0; i < NS; i++) {
         if (treeData.src_coord[i] > 1 - eps)
@@ -559,6 +406,7 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
             treeData.trg_coord[i] = 1 - eps;
     }
 
+    // build tree with pt_coord
     treeData.pt_coord = treeData.trg_coord;
 
     treePtr->Initialize(&treeData);
@@ -575,71 +423,25 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
 
 void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
     FMM_DataClear();
+
+    // sanity check
+    // Depending on the kernel, use SDim and TDim instead of 3
     if (src_val == nullptr) {
         printf("Error, no source value\n");
-        return;
+        exit(1);
+    }
+    const int nsrc = src_val->size() / SDim;
+    if (nsrc * 3 != treeData.src_coord.Dim()) {
+        printf("src_val size error\n");
+        exit(1);
     }
 
-    // in place rotate of src_val;
-    const int nsrc = src_val->size() / 3;
-    if (pbc == PAXIS::PXZ) {
-// rotate y axis to z axis to use the z 1d periodic data
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            double x = (*src_val)[3 * i];
-            double y = (*src_val)[3 * i + 1];
-            double z = (*src_val)[3 * i + 2];
-            (*src_val)[3 * i] = z;
-            (*src_val)[3 * i + 1] = x;
-            (*src_val)[3 * i + 2] = y;
-        }
-    } else if (pbc == PAXIS::PYZ) {
-// rotate x axis to z axis
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            double x = (*src_val)[3 * i];
-            double y = (*src_val)[3 * i + 1];
-            double z = (*src_val)[3 * i + 2];
-            (*src_val)[3 * i] = y;
-            (*src_val)[3 * i + 1] = z;
-            (*src_val)[3 * i + 2] = x;
-        }
-    } else if (pbc == PAXIS::PY) {
-        // rotate y axis to x axis to use the x 1d periodic data
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            double x = (*src_val)[3 * i];
-            double y = (*src_val)[3 * i + 1];
-            double z = (*src_val)[3 * i + 2];
-            (*src_val)[3 * i] = y;
-            (*src_val)[3 * i + 1] = z;
-            (*src_val)[3 * i + 2] = x;
-        }
-    } else if (pbc == PAXIS::PZ) {
-        // rotate z axis to x axis to use the x 1d periodic data
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            double x = (*src_val)[3 * i];
-            double y = (*src_val)[3 * i + 1];
-            double z = (*src_val)[3 * i + 2];
-            (*src_val)[3 * i] = z;
-            (*src_val)[3 * i + 1] = x;
-            (*src_val)[3 * i + 2] = y;
-        }
-
-    } else {
-        // no rotate
-    }
+    trg_val.resize(TDim * n_trg);
 
     myTimer.start();
     PtFMM_Evaluate(treePtr, trg_val, n_trg, src_val, nullptr);
     myTimer.stop("Stokes Near Field");
 
-#ifdef FMMDEBUG
-    std::cout << "before pxyz" << trg_val[0] << std::endl;
-    std::cout << trg_val[1] << std::endl;
-    std::cout << trg_val[2] << std::endl;
-#endif
     if (pbc != NONE) {
         myTimer.start();
         // calcM(treeData.trg_coord, trg_val, *src_val);
@@ -647,95 +449,12 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
         myTimer.stop("Stokes Far Field");
     }
 
-    // scale and rotate back
-    if (pbc == PAXIS::PXZ) {
-// rotate y axis to z axis to use the z 1d periodic data
+// no rotation
 #pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            double x = (*src_val)[3 * i];
-            double y = (*src_val)[3 * i + 1];
-            double z = (*src_val)[3 * i + 2];
-            (*src_val)[3 * i] = y;
-            (*src_val)[3 * i + 1] = z;
-            (*src_val)[3 * i + 2] = x;
-        }
-#pragma omp parallel for
-        for (size_t i = 0; i < n_trg; i++) {
-            double x = trg_val[3 * i];
-            double y = trg_val[3 * i + 1];
-            double z = trg_val[3 * i + 2];
-            trg_val[3 * i] = y * scaleFactor;
-            trg_val[3 * i + 1] = z * scaleFactor;
-            trg_val[3 * i + 2] = x * scaleFactor;
-        }
-    } else if (pbc == PAXIS::PYZ) {
-// rotate x axis to z axis
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            double x = (*src_val)[3 * i];
-            double y = (*src_val)[3 * i + 1];
-            double z = (*src_val)[3 * i + 2];
-            (*src_val)[3 * i] = z;
-            (*src_val)[3 * i + 1] = x;
-            (*src_val)[3 * i + 2] = y;
-        }
-#pragma omp parallel for
-        for (size_t i = 0; i < n_trg; i++) {
-            double x = trg_val[3 * i];
-            double y = trg_val[3 * i + 1];
-            double z = trg_val[3 * i + 2];
-            trg_val[3 * i] = z * scaleFactor;
-            trg_val[3 * i + 1] = x * scaleFactor;
-            trg_val[3 * i + 2] = y * scaleFactor;
-        }
-    } else if (pbc == PAXIS::PY) {
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            double x = (*src_val)[3 * i];
-            double y = (*src_val)[3 * i + 1];
-            double z = (*src_val)[3 * i + 2];
-            (*src_val)[3 * i] = z;
-            (*src_val)[3 * i + 1] = x;
-            (*src_val)[3 * i + 2] = y;
-        }
-#pragma omp parallel for
-        for (size_t i = 0; i < n_trg; i++) {
-            double x = trg_val[3 * i];
-            double y = trg_val[3 * i + 1];
-            double z = trg_val[3 * i + 2];
-            trg_val[3 * i] = z * scaleFactor;
-            trg_val[3 * i + 1] = x * scaleFactor;
-            trg_val[3 * i + 2] = y * scaleFactor;
-        }
-    } else if (pbc == PAXIS::PZ) {
-#pragma omp parallel for
-        for (size_t i = 0; i < nsrc; i++) {
-            double x = (*src_val)[3 * i];
-            double y = (*src_val)[3 * i + 1];
-            double z = (*src_val)[3 * i + 2];
-            (*src_val)[3 * i] = y;
-            (*src_val)[3 * i + 1] = z;
-            (*src_val)[3 * i + 2] = x;
-        }
-#pragma omp parallel for
-        for (size_t i = 0; i < n_trg; i++) {
-            double x = trg_val[3 * i];
-            double y = trg_val[3 * i + 1];
-            double z = trg_val[3 * i + 2];
-            trg_val[3 * i] = y * scaleFactor;
-            trg_val[3 * i + 1] = z * scaleFactor;
-            trg_val[3 * i + 2] = x * scaleFactor;
-        }
-    }
-
-    else {
-// no rotate
-#pragma omp parallel for
-        for (size_t i = 0; i < n_trg; i++) {
-            trg_val[3 * i] *= scaleFactor;
-            trg_val[3 * i + 1] *= scaleFactor;
-            trg_val[3 * i + 2] *= scaleFactor;
-        }
+    for (size_t i = 0; i < n_trg; i++) {
+        trg_val[TDim * i] *= scaleFactor;
+        trg_val[TDim * i + 1] *= scaleFactor;
+        trg_val[TDim * i + 2] *= scaleFactor;
     }
 
 #ifdef FMMTIMING
@@ -775,16 +494,13 @@ double *FMM_Wrapper::readM2LMat(const char *fname, const int p) {
 void FMM_Wrapper::calcMStokes(std::vector<double> &trgValue) {
     // add periodization for stokes G
 
-    // make a copy to do correction
-    pvfmm::Vector<double> v = treePtr->RootNode()->FMMData()->upward_equiv; // the value calculated by pvfmm
+    // make a copy of the value calculated by pvfmm
+    pvfmm::Vector<double> v = treePtr->RootNode()->FMMData()->upward_equiv;
     auto &trgCoord = treeData.trg_coord;
-
-    assert(v.Dim() == 3 * this->equivN);
 
     // add to trg_value
     const int n_trg = trgCoord.Dim() / 3;
-    assert(trgCoord.Dim() == trg_value.size());
-    const double pi = 3.1415926535897932384626433;
+    assert(trg_value.size() == n_trg * TDim);
 
     int M = 3 * equivN;
     int N = 3 * equivN; // checkN = equivN in this code.
@@ -794,14 +510,15 @@ void FMM_Wrapper::calcMStokes(std::vector<double> &trgValue) {
 #pragma omp parallel for
     for (int i = 0; i < M; i++) {
         double temp = 0;
-        //#pragma unroll 4
         for (int j = 0; j < N; j++) {
             temp += pm2l[i * N + j] * v[j];
         }
         M2Lsource[i] = temp;
     }
 
-    const pvfmm::Kernel<double> &kernelG = pvfmm::StokesKernel<double>::velocity();
+    // const pvfmm::Kernel<double> &kernelG =
+    // regularized ? pvfmm::StokesRegKernel<double>::Vel() : pvfmm::StokesKernel<double>::velocity();
+
     const size_t chunkSize = 2000; // each chunk has 2000 target points.
     const size_t chunkNumber = floor(n_trg / chunkSize) + 1;
     // printf("chunkSize, chunkNumber: %zu, %zu\n", chunkSize, chunkNumber);
@@ -810,8 +527,9 @@ void FMM_Wrapper::calcMStokes(std::vector<double> &trgValue) {
         const size_t idTrgLow = i * chunkSize;
         const size_t idTrgHigh = (i + 1 < chunkNumber) ? idTrgLow + chunkSize : n_trg; // not inclusive
         //        printf("i, idTrgLow, idTrgHigh: %d, %d, %d\n", i, idTrgLow, idTrgHigh);
+
         kernelG.k_l2t->ker_poten(pointLEquiv.data(), equivN, M2Lsource.data(), 1, &(trgCoord[3 * idTrgLow]),
-                                 idTrgHigh - idTrgLow, &(trgValue[3 * idTrgLow]), NULL);
+                                 idTrgHigh - idTrgLow, &(trgValue[TDim * idTrgLow]), NULL);
     }
 }
 

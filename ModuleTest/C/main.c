@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
     // FMM_Wrapper
     // Evaluate, clear, and Evaluate again
     {
-        FMM_Wrapper *fmm = create_fmm_wrapper(8, 2000, 0, 7);
+        FMM_Wrapper *fmm = create_fmm_wrapper(8, 2000, 0, 7, 0);
         FMM_SetBox(fmm, 0, 1, 0, 1, 0, 1);
         FMM_UpdateTree(fmm, trgCoord, srcCoord, ntrg, nsrc);
         FMM_Evaluate(fmm, trgValue, srcValue, ntrg, nsrc);

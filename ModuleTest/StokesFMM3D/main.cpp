@@ -9,6 +9,7 @@
 #include "Util/ChebNodal.h"
 #include "Util/Ewald.hpp"
 #include "Util/cmdparser.hpp"
+#include "regularized_stokeslet.hpp"
 
 #include <chrono>
 #include <iostream>
@@ -18,9 +19,21 @@
 #include <Eigen/Dense>
 #include <mpi.h>
 
-#define MAXP 16
+constexpr int MAXP = 12;
 
-void distributePts(std::vector<double> &pts) {
+void configure_parser(cli::Parser &parser) {
+    parser.set_optional<int>("P", "periodicity", 0, "0: NONE. 1: PX. 4:PXY. 7:PXYZ. Default 0");
+    parser.set_optional<int>("T", "ntarget", 2, "target number in each dimension. default 2");
+    parser.set_optional<double>("B", "box", 1.0, "box edge length");
+    parser.set_optional<double>("M", "move", 0.0, "box origin shift move");
+    parser.set_optional<int>("R", "random", 1, "1 for random points, 0 for regular mesh");
+    parser.set_optional<int>("S", "source", 1,
+                             "1 for point force, 2 for force dipole, 4 for quadrupole, other for same as target.");
+    parser.set_optional<double>("E", "regularize", 0,
+                                "The regularization parameter epsilon. Default to 0, Recommend 1e-4");
+}
+
+void distributePts(std::vector<double> &pts, const int dim = 3) {
     int myRank;
     int nProcs;
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -41,11 +54,11 @@ void distributePts(std::vector<double> &pts) {
     MPI_Bcast(pts.data(), ptsGlobalSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     // each take a portion
-    const int nPts = ptsGlobalSize / 3;
+    const int nPts = ptsGlobalSize / dim;
     // inclusive low
-    int indexlow = 3 * floor(myRank * nPts / static_cast<double>(nProcs));
+    int indexlow = dim * floor(myRank * nPts / static_cast<double>(nProcs));
     // non-inclusive high
-    int indexhigh = 3 * floor((myRank + 1) * nPts / static_cast<double>(nProcs));
+    int indexhigh = dim * floor((myRank + 1) * nPts / static_cast<double>(nProcs));
     if (myRank == nProcs - 1) {
         indexhigh = ptsGlobalSize;
     }
@@ -56,7 +69,6 @@ void distributePts(std::vector<double> &pts) {
 }
 
 void collectPts(std::vector<double> &pts) {
-
     int myRank;
     int nProcs;
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -103,32 +115,14 @@ void collectPts(std::vector<double> &pts) {
     pts = std::move(ptsRecv);
 }
 
-class Trapz { // map from (-1,1)
-  public:
-    Trapz(int N_) : N(N_) {
-        points.resize(N_ + 1);
-        weights.resize(N_ + 1);
-
-        for (int i = 0; i < N_ + 1; i++) {
-            points[i] = -1 + 2.0 * i / N_;
-            weights[i] = 2.0 / N_;
-        }
-        weights[0] *= 0.5;
-        weights.back() *= 0.5;
-    }
-    int N;
-    std::vector<double> points;
-    std::vector<double> weights;
-};
-
 void calcTrueValueFMM(std::vector<double> &trg_value_true, const std::vector<double> &trg_coord,
                       std::vector<double> &src_value, const std::vector<double> &src_coord, const double box,
-                      const double shift, const FMM_Wrapper::PAXIS pset) {
+                      const double shift, const FMM_Wrapper::PAXIS pset, const bool reg) {
     std::cout << "***************************************************" << std::endl;
     std::cout << "Skip O(N^2) true value calculation for large system" << std::endl;
-    std::cout << "Use FMM p=16 as 'true' value                       " << std::endl;
+    std::cout << "Use FMM p=" << MAXP << " as 'true' value                       " << std::endl;
     std::cout << "***************************************************" << std::endl;
-    FMM_Wrapper myFMM(16, 4000, 0, pset);
+    FMM_Wrapper myFMM(MAXP, 2000, 0, pset, reg);
     myFMM.FMM_SetBox(shift, shift + box, shift, shift + box, shift, shift + box);
     myFMM.FMM_UpdateTree(src_coord, trg_coord);
     myFMM.FMM_Evaluate(trg_value_true, trg_coord.size() / 3, &src_value);
@@ -136,96 +130,64 @@ void calcTrueValueFMM(std::vector<double> &trg_value_true, const std::vector<dou
 }
 
 void calcTrueValueN2(std::vector<double> &trg_value_true, const std::vector<double> &trg_coord,
-                     std::vector<double> &src_value, const std::vector<double> &src_coord, const double box,
-                     const double shift, const FMM_Wrapper::PAXIS pset) {
+                     const std::vector<double> &src_value, const std::vector<double> &src_coord, const double box,
+                     const double shift, const FMM_Wrapper::PAXIS pset, const bool reg) {
 
-    // calc Ewald accuracy test
-    trg_value_true.resize(trg_coord.size());
+    if (reg) {
+        const int n_trg = trg_coord.size() / 3;
+        std::vector<double> pvel_value(n_trg * 4, 0);
+        if (pset == FMM_Wrapper::PAXIS::NONE) {
+            reg_stokelset(src_coord, src_value, trg_coord, pvel_value);
+        }
+
+        trg_value_true.resize(n_trg * 3);
 #pragma omp parallel for
-    for (int t = 0; t < trg_coord.size() / 3; t++) {
-        Eigen::Vector3d target(trg_coord[3 * t], trg_coord[3 * t + 1], trg_coord[3 * t + 2]);
-        // shift and rotate to [0,1)
-        target[0] -= shift;
-        target[1] -= shift;
-        target[2] -= shift;
-        target *= (1 / box);
-        if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PYZ) {
-            Eigen::Vector3d temp = target;
-            target[0] = temp[1];
-            target[1] = temp[2];
-            target[2] = temp[0];
-        } else if (pset == FMM_Wrapper::PAXIS::PY || pset == FMM_Wrapper::PAXIS::PXZ) {
-            Eigen::Vector3d temp = target;
-            target[0] = temp[2];
-            target[1] = temp[0];
-            target[2] = temp[1];
+        for (int i = 0; i < n_trg; i++) {
+            trg_value_true[3 * i + 0] = pvel_value[4 * i + 1];
+            trg_value_true[3 * i + 1] = pvel_value[4 * i + 2];
+            trg_value_true[3 * i + 2] = pvel_value[4 * i + 3];
         }
+    } else {
+        // calc Ewald accuracy test
+        trg_value_true.resize(trg_coord.size());
+#pragma omp parallel for
+        for (int t = 0; t < trg_coord.size() / 3; t++) {
+            Eigen::Vector3d target(trg_coord[3 * t], trg_coord[3 * t + 1], trg_coord[3 * t + 2]);
+            // shift and scale to [0,1)
+            target[0] -= shift;
+            target[1] -= shift;
+            target[2] -= shift;
+            target *= (1 / box);
 
-        Eigen::Vector3d targetValue(0, 0, 0);
-        for (int s = 0; s < src_coord.size() / 3; s++) {
-            Eigen::Vector3d source(src_coord[3 * s], src_coord[3 * s + 1], src_coord[3 * s + 2]);
-            Eigen::Vector3d sourceValue(src_value[3 * s], src_value[3 * s + 1], src_value[3 * s + 2]);
-            // shift and rotate to [0,1)
-            source[0] -= shift;
-            source[1] -= shift;
-            source[2] -= shift;
-            source *= (1 / box);
-            if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PYZ) {
-                Eigen::Vector3d temp = source;
-                source[0] = temp[1];
-                source[1] = temp[2];
-                source[2] = temp[0];
-                temp = sourceValue;
-                sourceValue[0] = temp[1];
-                sourceValue[1] = temp[2];
-                sourceValue[2] = temp[0];
-            } else if (pset == FMM_Wrapper::PAXIS::PY || pset == FMM_Wrapper::PAXIS::PXZ) {
-                Eigen::Vector3d temp = source;
-                source[0] = temp[2];
-                source[1] = temp[0];
-                source[2] = temp[1];
-                temp = sourceValue;
-                sourceValue[0] = temp[2];
-                sourceValue[1] = temp[0];
-                sourceValue[2] = temp[1];
-            }
+            Eigen::Vector3d targetValue(0, 0, 0);
+            for (int s = 0; s < src_coord.size() / 3; s++) {
+                Eigen::Vector3d source(src_coord[3 * s], src_coord[3 * s + 1], src_coord[3 * s + 2]);
+                Eigen::Vector3d sourceValue(src_value[3 * s], src_value[3 * s + 1], src_value[3 * s + 2]);
+                // shift and rotate to [0,1)
+                source[0] -= shift;
+                source[1] -= shift;
+                source[2] -= shift;
+                source *= (1 / box);
 
-            Eigen::Vector3d rst = target - source;
-            Eigen::Matrix3d G;
-            if (pset == FMM_Wrapper::PAXIS::PXYZ) {
-                GkernelEwald3D(rst, G, 1.0);
-            } else if (pset == FMM_Wrapper::PAXIS::PXY || pset == FMM_Wrapper::PAXIS::PXZ ||
-                       pset == FMM_Wrapper::PAXIS::PYZ) {
-                GkernelEwald2D(rst, G); // default box = 1
-            } else if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PY ||
-                       pset == FMM_Wrapper::PAXIS::PZ) {
-                Gkernel1D(rst, G); // default box =1
-            } else if (pset == FMM_Wrapper::PAXIS::NONE) {
-                Gkernel(rst, Eigen::Vector3d(0, 0, 0), G);
+                Eigen::Vector3d rst = target - source;
+                Eigen::Matrix3d G;
+                if (pset == FMM_Wrapper::PAXIS::PXYZ) {
+                    GkernelEwald3D(rst, G, 1.0);
+                } else if (pset == FMM_Wrapper::PAXIS::PXY) {
+                    GkernelEwald2D(rst, G); // default box = 1
+                } else if (pset == FMM_Wrapper::PAXIS::PX) {
+                    Gkernel1D(rst, G); // default box =1
+                } else if (pset == FMM_Wrapper::PAXIS::NONE) {
+                    Gkernel(rst, Eigen::Vector3d(0, 0, 0), G);
+                }
+                targetValue += (G * sourceValue) / (8 * PI314);
             }
-            targetValue += (G * sourceValue) / (8 * PI314);
-        }
-        // rotate and scale back
-        if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PYZ) {
-            trg_value_true[3 * t] = targetValue[2] / box;
-            trg_value_true[3 * t + 1] = targetValue[0] / box;
-            trg_value_true[3 * t + 2] = targetValue[1] / box;
-        } else if (pset == FMM_Wrapper::PAXIS::PY || pset == FMM_Wrapper::PAXIS::PXZ) {
-            trg_value_true[3 * t] = targetValue[1] / box;
-            trg_value_true[3 * t + 1] = targetValue[2] / box;
-            trg_value_true[3 * t + 2] = targetValue[0] / box;
-        } else {
+            // scale back
             trg_value_true[3 * t] = targetValue[0] / box;
             trg_value_true[3 * t + 1] = targetValue[1] / box;
             trg_value_true[3 * t + 2] = targetValue[2] / box;
         }
     }
-
-    //      std::cout << "-------------true value---------------" << std::endl;
-    //  for (auto &t : trg_value_true) {
-    //      std::cout << t << std::endl;
-    //  }
-    //      std::cout << "-------------true value end-----------" << std::endl;
 }
 
 void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std::vector<double> &trg_coord,
@@ -236,56 +198,15 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
     const int ntrgEdge = parser.get<int>("T");
     const double box = parser.get<double>("B");
     const double shift = parser.get<double>("M");
+    const double reg = std::abs(parser.get<double>("E"));
+    FMM_Wrapper::PAXIS pset = static_cast<FMM_Wrapper::PAXIS>(parser.get<int>("P"));
 
-    FMM_Wrapper::PAXIS pset;
-    int pinput = parser.get<int>("P");
-    switch (pinput) {
-    case 0:
-        pset = FMM_Wrapper::PAXIS::NONE;
-        break;
-    case 1:
-        pset = FMM_Wrapper::PAXIS::PX;
-        break;
-    case 2:
-        pset = FMM_Wrapper::PAXIS::PY;
-        break;
-    case 3:
-        pset = FMM_Wrapper::PAXIS::PZ;
-        break;
-    case 4:
-        pset = FMM_Wrapper::PAXIS::PXY;
-        break;
-    case 5:
-        pset = FMM_Wrapper::PAXIS::PXZ;
-        break;
-    case 6:
-        pset = FMM_Wrapper::PAXIS::PYZ;
-        break;
-    case 7:
-        pset = FMM_Wrapper::PAXIS::PXYZ;
-        break;
-    }
-
-    const int chebN = ntrgEdge;
-    ChebNodal chebData(chebN);
-    if (pset != FMM_Wrapper::PAXIS::PXYZ) {
-        chebData.points[0] += 0;
-        chebData.points.back() -= 1e-13; // prevent PVFMM crash with point located at the edge
-    }
-    //	Trapz chebData(chebN);
-
-    // for (auto &v : chebData.points) {
-    //     std::cout << std::setprecision(10) << v << std::endl;
-    // }
-    const int dimension = chebData.points.size();
+    std::random_device rd;
+    std::mt19937 gen(rd());
 
     // initialize target points
     if (randomS == true) {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-
         std::lognormal_distribution<> d(log(0.2), 0.5);
-
         for (int i = 0; i < ntrgEdge + 1; i++) {
             for (int j = 0; j < ntrgEdge + 1; j++) {
                 for (int k = 0; k < ntrgEdge + 1; k++) {
@@ -295,25 +216,20 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
                     trg_coord.push_back(r01 * box + shift); // y
                     r01 = fmod(d(gen), 1.0);
                     trg_coord.push_back(r01 * box + shift); // z
-                    trg_value.push_back(drand48() - 0.5);   // x
-                    trg_value.push_back(drand48() - 0.5);   // y
-                    trg_value.push_back(drand48() - 0.5);   // z
                 }
             }
         }
-
-        FILE *pfile = fopen("randomPoints", "w");
-        for (int i = 0; i < trg_coord.size() / 3; i++) {
-            fprintf(pfile, "%f\t%f\t%f\n", trg_coord[3 * i], trg_coord[3 * i + 1], trg_coord[3 * i + 2]);
-        }
-        fclose(pfile);
     } else {
+        const int chebN = ntrgEdge;
+        ChebNodal chebData(chebN);
+        if (pset != FMM_Wrapper::PAXIS::PXYZ) {
+            chebData.points[0] += 0;
+            chebData.points.back() -= 1e-13; // prevent PVFMM crash with point located at the edge
+        }
+        const int dimension = chebData.points.size();
 
         std::vector<double> &chebMesh = trg_coord;
-        std::vector<double> &chebValue = trg_value;
         chebMesh.resize(pow(dimension, 3) * 3);
-        chebValue.resize(pow(dimension, 3) * 3);
-
         for (int i = 0; i < dimension; i++) {
             for (int j = 0; j < dimension; j++) {
                 for (int k = 0; k < dimension; k++) {
@@ -323,23 +239,18 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
                         (chebData.points[j] + 1) * box / 2 + shift;
                     chebMesh[3 * (i * dimension * dimension + j * dimension + k) + 2] =
                         (chebData.points[k] + 1) * box / 2 + shift;
-
-                    chebValue[3 * (i * dimension * dimension + j * dimension + k)] =
-                        (drand48() - 0.5); // RNG on [-0.5,0.5]
-                    chebValue[3 * (i * dimension * dimension + j * dimension + k) + 1] =
-                        (drand48() - 0.5); // RNG on [-0.5,0.5]
-                    chebValue[3 * (i * dimension * dimension + j * dimension + k) + 2] =
-                        (drand48() - 0.5); // RNG on [-0.5,0.5]
                 }
             }
         }
-
-        FILE *pfile = fopen("chebPoints", "w");
-        for (int i = 0; i < chebMesh.size() / 3; i++) {
-            fprintf(pfile, "%f\t%f\t%f\n", chebMesh[3 * i], chebMesh[3 * i + 1], chebMesh[3 * i + 2]);
+    }
+    {
+        FILE *pfile = fopen("trgPoints.txt", "w");
+        for (int i = 0; i < trg_coord.size() / 3; i++) {
+            fprintf(pfile, "%f\t%f\t%f\n", trg_coord[3 * i], trg_coord[3 * i + 1], trg_coord[3 * i + 2]);
         }
         fclose(pfile);
     }
+
     // initialize source points
     int nsource = parser.get<int>("S");
     switch (nsource) {
@@ -347,15 +258,6 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
         src_coord.push_back(0.7 * box + shift);
         src_coord.push_back(0.6 * box + shift);
         src_coord.push_back(0.4 * box + shift);
-        src_value.push_back(1.0 / sqrt(14.0));
-        src_value.push_back(2.0 / sqrt(14.0));
-        src_value.push_back(3.0 / sqrt(14.0));
-        for (auto &s : src_coord) {
-            std::cout << "src_coord" << s << std::endl;
-        }
-        for (auto &s : src_value) {
-            std::cout << "src_value" << s << std::endl;
-        }
     } break;
     case 2: {
         src_coord.push_back(0.7 * box + shift); // 1
@@ -364,20 +266,8 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
         src_coord.push_back(0.2 * box + shift); // 2
         src_coord.push_back(0.8 * box + shift);
         src_coord.push_back(0.7 * box + shift);
-        src_value.push_back(1 / sqrt(14.0));
-        src_value.push_back(2 / sqrt(14.0));
-        src_value.push_back(3 / sqrt(14.0));
-        src_value.push_back(-src_value[0]);
-        src_value.push_back(-src_value[1]);
-        src_value.push_back(-src_value[2]);
-        for (auto &s : src_coord) {
-            std::cout << "src_coord" << s << std::endl;
-        }
-        for (auto &s : src_value) {
-            std::cout << "src_value" << s << std::endl;
-        }
     } break;
-    case 4: {                                   // quadrupole, no dipole
+    case 4: {
         src_coord.push_back(0.1 * box + shift); // 1
         src_coord.push_back(0.1 * box + shift);
         src_coord.push_back(0.1 * box + shift);
@@ -390,58 +280,68 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
         src_coord.push_back(0.4 * box + shift); // 4
         src_coord.push_back(0.4 * box + shift);
         src_coord.push_back(0.4 * box + shift);
-        const double f = 1 / sqrt(3);
-        src_value.push_back(f); // 1
-        src_value.push_back(f);
-        src_value.push_back(f);
-        src_value.push_back(-f); // 2
-        src_value.push_back(-f);
-        src_value.push_back(-f);
-        src_value.push_back(-f); // 2
-        src_value.push_back(-f);
-        src_value.push_back(-f);
-        src_value.push_back(f); // 4
-        src_value.push_back(f);
-        src_value.push_back(f);
-        for (auto &s : src_coord) {
-            std::cout << "src_coord" << s << std::endl;
-        }
-        for (auto &s : src_value) {
-            std::cout << "src_value" << s << std::endl;
-        }
     } break;
-
-    default: {
+    default:
         src_coord = trg_coord;
-        src_value = trg_value;
-    } break;
+        break;
     }
+
+    // set src_value
+    const int n_src = src_coord.size() / 3;
+    std::uniform_real_distribution<> uni(-0.5, 0.5);
+    const int SDim = reg > 0 ? 4 : 3;
+    src_value.resize(SDim * n_src);
+    if (reg > 0) {
+        for (int i = 0; i < n_src; i++) {
+            for (int j = 0; j < SDim - 1; j++)
+                src_value[SDim * i + j] = uni(gen);
+            src_value[4 * i + 3] = reg;
+        }
+    } else {
+        for (int i = 0; i < n_src; i++) {
+            for (int j = 0; j < SDim - 1; j++)
+                src_value[SDim * i + j] = uni(gen);
+        }
+    }
+
     // enforce net charge for 1P and 2P
-    if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PY || pset == FMM_Wrapper::PAXIS::PZ ||
-        pset == FMM_Wrapper::PAXIS::PXY || pset == FMM_Wrapper::PAXIS::PYZ || pset == FMM_Wrapper::PAXIS::PXZ) {
+    if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PXY) {
         double fx = 0, fy = 0, fz = 0;
-        assert(src_coord.size() == src_value.size());
-        for (int i = 0; i < src_coord.size() / 3; i++) {
-            fx += src_value[3 * i];
-            fy += src_value[3 * i + 1];
-            fz += src_value[3 * i + 2];
+        for (int i = 0; i < n_src; i++) {
+            fx += src_value[SDim * i];
+            fy += src_value[SDim * i + 1];
+            fz += src_value[SDim * i + 2];
         }
-        fx /= (src_coord.size() / 3);
-        fy /= (src_coord.size() / 3);
-        fz /= (src_coord.size() / 3);
-        for (int i = 0; i < src_coord.size() / 3; i++) {
-            src_value[3 * i] -= fx;
-            src_value[3 * i + 1] -= fy;
-            src_value[3 * i + 2] -= fz;
+        fx /= n_src;
+        fy /= n_src;
+        fz /= n_src;
+        for (int i = 0; i < n_src; i++) {
+            src_value[SDim * i] -= fx;
+            src_value[SDim * i + 1] -= fy;
+            src_value[SDim * i + 2] -= fz;
         }
+    }
+    {
+        FILE *pfile = fopen("srcPoints.txt", "w");
+        for (int i = 0; i < n_src; i++) {
+            fprintf(pfile, "%f\t%f\t%f, %f\t%f\t%f\n", src_coord[3 * i], src_coord[3 * i + 1], src_coord[3 * i + 2],
+                    src_value[SDim * i], src_value[SDim * i + 1], src_value[SDim * i + 2]);
+        }
+        fclose(pfile);
     }
 
     return;
 }
 
 void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std::vector<double> &src_value,
-             std::vector<double> &src_coord, std::vector<double> &trg_value_true, int p, double box, double shift,
-             FMM_Wrapper::PAXIS pset) {
+             std::vector<double> &src_coord, std::vector<double> &trg_value_true, const int p,
+             const cli::Parser &parser) {
+
+    const double box = parser.get<double>("B");
+    const double shift = parser.get<double>("M");
+    const double reg = std::abs(parser.get<double>("E"));
+    FMM_Wrapper::PAXIS pset = static_cast<FMM_Wrapper::PAXIS>(parser.get<int>("P"));
+
     int myRank;
     int nProcs;
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -454,15 +354,16 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std
         std::cout << "omp threads: " << omp_get_max_threads() << std::endl;
     }
 
+    FMM_Wrapper myFMM(p, 2000, 0, pset, (reg > 0));
+
     distributePts(src_coord);
-    distributePts(src_value);
+    distributePts(src_value, myFMM.SDim);
     distributePts(trg_coord);
-    distributePts(trg_value);
+    distributePts(trg_value, myFMM.TDim);
 
-    FMM_Wrapper myFMM(p, 4000, 0, pset);
     myFMM.FMM_SetBox(shift, shift + box, shift, shift + box, shift, shift + box);
-    std::cout << "FMM" << std::endl;
 
+    std::cout << "FMM" << std::endl;
     myFMM.FMM_UpdateTree(src_coord, trg_coord);
 
     // run a 'noisy fmm' first, to check the old data is properly cleared by DataClear().
@@ -479,6 +380,15 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std
     collectPts(trg_coord);
     collectPts(trg_value);
     MPI_Barrier(MPI_COMM_WORLD);
+
+    {
+        FILE *pfile = fopen("trgValues.txt", "w");
+        for (int i = 0; i < trg_coord.size() / 3; i++) {
+            fprintf(pfile, "%12e\t%12e\t%12e, %12e\t%12e\t%12e\n", trg_value[3 * i], trg_value[3 * i + 1],
+                    trg_value[3 * i + 2], trg_value_true[3 * i], trg_value_true[3 * i + 1], trg_value_true[3 * i + 2]);
+        }
+        fclose(pfile);
+    }
 
     if (myRank == 0) {
 
@@ -510,17 +420,6 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std
     }
 }
 
-void configure_parser(cli::Parser &parser) {
-    parser.set_optional<int>("P", "periodicity", 0,
-                             "0: NONE. 1: PX. 2:PY. 3:PZ. 4:PXY. 5:PXZ. 6:PYZ. 7:PXYZ. Default 0");
-    parser.set_optional<int>("T", "ntarget", 2, "target number in each dimension. default 2");
-    parser.set_optional<double>("B", "box", 1.0, "box edge length");
-    parser.set_optional<double>("M", "move", 0.0, "box origin shift move");
-    parser.set_optional<int>("R", "random", 1, "1 for random points, 0 for regular mesh");
-    parser.set_optional<int>("S", "source", 1,
-                             "1 for point force, 2 for force dipole, 4 for quadrupole, other for same as target.");
-}
-
 int main(int argc, char **argv) {
     Eigen::initParallel();
     Eigen::setNbThreads(1);
@@ -537,38 +436,12 @@ int main(int argc, char **argv) {
     std::cout << "Shift: " << parser.get<double>("M") << std::endl;
     std::cout << "Random: " << parser.get<int>("R") << std::endl;
     std::cout << "Source: " << parser.get<int>("S") << std::endl;
-
-    FMM_Wrapper::PAXIS pset;
-    int pinput = parser.get<int>("P");
-    switch (pinput) {
-    case 0:
-        pset = FMM_Wrapper::PAXIS::NONE;
-        break;
-    case 1:
-        pset = FMM_Wrapper::PAXIS::PX;
-        break;
-    case 2:
-        pset = FMM_Wrapper::PAXIS::PY;
-        break;
-    case 3:
-        pset = FMM_Wrapper::PAXIS::PZ;
-        break;
-    case 4:
-        pset = FMM_Wrapper::PAXIS::PXY;
-        break;
-    case 5:
-        pset = FMM_Wrapper::PAXIS::PXZ;
-        break;
-    case 6:
-        pset = FMM_Wrapper::PAXIS::PYZ;
-        break;
-    case 7:
-        pset = FMM_Wrapper::PAXIS::PXYZ;
-        break;
-    }
+    std::cout << "Regularization: " << parser.get<double>("E") << std::endl;
 
     const double box = parser.get<double>("B");
     const double shift = parser.get<double>("M");
+    const double reg = parser.get<double>("E");
+    const FMM_Wrapper::PAXIS pset = static_cast<FMM_Wrapper::PAXIS>(parser.get<int>("P"));
 
     std::vector<double> src_coord(0);
     std::vector<double> src_value(0);
@@ -584,19 +457,19 @@ int main(int argc, char **argv) {
         trg_true.resize(trg_value.size());
         // determine which truevalue routine to call
         int trueN2 = 0;
-        if (src_coord.size() * trg_coord.size() < 3 * 1e7) {
+        if (src_coord.size() * trg_coord.size() < 3 * 1e8) {
             trueN2 = 1;
-            calcTrueValueN2(trg_true, trg_coord, src_value, src_coord, box, shift, pset);
+            calcTrueValueN2(trg_true, trg_coord, src_value, src_coord, box, shift, pset, (reg > 0));
         }
         MPI_Bcast(&trueN2, 1, MPI_INT, 0, MPI_COMM_WORLD);
         if (trueN2 == 0) {
-            calcTrueValueFMM(trg_true, trg_coord, src_value, src_coord, box, shift, pset);
+            calcTrueValueFMM(trg_true, trg_coord, src_value, src_coord, box, shift, pset, (reg > 0));
         }
     } else {
         int trueN2 = 0;
         MPI_Bcast(&trueN2, 1, MPI_INT, 0, MPI_COMM_WORLD);
         if (trueN2 == 0) {
-            calcTrueValueFMM(trg_true, trg_coord, src_value, src_coord, box, shift, pset);
+            calcTrueValueFMM(trg_true, trg_coord, src_value, src_coord, box, shift, pset, (reg > 0));
         }
     }
 
@@ -605,7 +478,7 @@ int main(int argc, char **argv) {
     // send to test
     double boxfac = pow(box / 2, 2); // for surface integral, scale the cheb weight from [-1,1] to box length
     for (int p = 6; p <= MAXP; p += 2) {
-        testFMM(trg_value, trg_coord, src_value, src_coord, trg_true, p, box, shift, pset);
+        testFMM(trg_value, trg_coord, src_value, src_coord, trg_true, p, parser);
         if (parser.get<int>("R") <= 0 && myRank == 0) {
             const int chebN = parser.get<int>("T");
             ChebNodal chebData(chebN);
@@ -615,23 +488,11 @@ int main(int argc, char **argv) {
             // calculate cheb Integrate
             double vx = 0, vy = 0, vz = 0;
             int imax, jmax, kmax;
-            if (pset == FMM_Wrapper::PAXIS::PX || pset == FMM_Wrapper::PAXIS::PYZ) {
-                // surface integration on YZ plane
-                imax = 1;
-                jmax = dimension;
-                kmax = dimension;
-            } else if (pset == FMM_Wrapper::PAXIS::PY || pset == FMM_Wrapper::PAXIS::PXZ) {
-                // surface integration on XZ plane
-                imax = dimension;
-                jmax = 1;
-                kmax = dimension;
-            } else {
-                // surface integration on XY plane
-                imax = dimension;
-                jmax = dimension;
-                kmax = 1;
-            }
 
+            // X flux through YZ plane
+            imax = 1;
+            jmax = dimension;
+            kmax = dimension;
             for (int i = 0; i < imax; i++) {
                 for (int j = 0; j < jmax; j++) {
                     for (int k = 0; k < kmax; k++) {
@@ -647,55 +508,54 @@ int main(int argc, char **argv) {
                     }
                 }
             }
-            std::cout << "net flow: " << vx / chebData.weights[0] << "," << vy / chebData.weights[0] << ","
+            std::cout << "Flux X through YZ: " << vx / chebData.weights[0] << "," << vy / chebData.weights[0] << ","
                       << vz / chebData.weights[0] << std::endl;
 
-            // two other fluxes for 3P
-            if (pset == FMM_Wrapper::PAXIS::PXYZ) {
-                imax = dimension;
-                jmax = 1;
-                kmax = dimension;
-                vx = 0, vy = 0, vz = 0;
-                for (int i = 0; i < imax; i++) {
-                    for (int j = 0; j < jmax; j++) {
-                        for (int k = 0; k < kmax; k++) {
-                            double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)] *
-                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1] *
-                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2] *
-                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            vx += vxp;
-                            vy += vyp;
-                            vz += vzp;
-                        }
+            // Y flux through XZ plane
+            imax = dimension;
+            jmax = 1;
+            kmax = dimension;
+            vx = 0, vy = 0, vz = 0;
+            for (int i = 0; i < imax; i++) {
+                for (int j = 0; j < jmax; j++) {
+                    for (int k = 0; k < kmax; k++) {
+                        double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)] *
+                                     chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                        double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1] *
+                                     chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                        double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2] *
+                                     chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                        vx += vxp;
+                        vy += vyp;
+                        vz += vzp;
                     }
                 }
-                std::cout << "net flow xz: " << vx / chebData.weights[0] << "," << vy / chebData.weights[0] << ","
-                          << vz / chebData.weights[0] << std::endl;
-
-                imax = 1;
-                jmax = dimension;
-                kmax = dimension;
-                vx = 0, vy = 0, vz = 0;
-                for (int i = 0; i < imax; i++) {
-                    for (int j = 0; j < jmax; j++) {
-                        for (int k = 0; k < kmax; k++) {
-                            double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)] *
-                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1] *
-                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2] *
-                                         chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
-                            vx += vxp;
-                            vy += vyp;
-                            vz += vzp;
-                        }
-                    }
-                }
-                std::cout << "net flow yz: " << vx / chebData.weights[0] << "," << vy / chebData.weights[0] << ","
-                          << vz / chebData.weights[0] << std::endl;
             }
+            std::cout << "Flux Y through XZ: " << vx / chebData.weights[0] << "," << vy / chebData.weights[0] << ","
+                      << vz / chebData.weights[0] << std::endl;
+
+            // Z flux through YZ plane
+            imax = dimension;
+            jmax = dimension;
+            kmax = 1;
+            vx = 0, vy = 0, vz = 0;
+            for (int i = 0; i < imax; i++) {
+                for (int j = 0; j < jmax; j++) {
+                    for (int k = 0; k < kmax; k++) {
+                        double vxp = trg_value[3 * (i * dimension * dimension + j * dimension + k)] *
+                                     chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                        double vyp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 1] *
+                                     chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                        double vzp = trg_value[3 * (i * dimension * dimension + j * dimension + k) + 2] *
+                                     chebData.weights[i] * chebData.weights[j] * chebData.weights[k] * boxfac;
+                        vx += vxp;
+                        vy += vyp;
+                        vz += vzp;
+                    }
+                }
+            }
+            std::cout << "Flux Z through XY: " << vx / chebData.weights[0] << "," << vy / chebData.weights[0] << ","
+                      << vz / chebData.weights[0] << std::endl;
         }
     }
 
