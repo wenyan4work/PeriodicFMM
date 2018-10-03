@@ -120,9 +120,9 @@ void calcTrueValueFMM(std::vector<double> &trg_value_true, const std::vector<dou
                       const double shift, const FMM_Wrapper::PAXIS pset, const bool reg) {
     std::cout << "***************************************************" << std::endl;
     std::cout << "Skip O(N^2) true value calculation for large system" << std::endl;
-    std::cout << "Use FMM p=16 as 'true' value                       " << std::endl;
+    std::cout << "Use FMM p=" << MAXP << " as 'true' value                       " << std::endl;
     std::cout << "***************************************************" << std::endl;
-    FMM_Wrapper myFMM(MAXP, 500, 0, pset, reg);
+    FMM_Wrapper myFMM(MAXP, 2000, 0, pset, reg);
     myFMM.FMM_SetBox(shift, shift + box, shift, shift + box, shift, shift + box);
     myFMM.FMM_UpdateTree(src_coord, trg_coord);
     myFMM.FMM_Evaluate(trg_value_true, trg_coord.size() / 3, &src_value);
@@ -354,7 +354,7 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std
         std::cout << "omp threads: " << omp_get_max_threads() << std::endl;
     }
 
-    FMM_Wrapper myFMM(p, 500, 0, pset, (reg > 0));
+    FMM_Wrapper myFMM(p, 2000, 0, pset, (reg > 0));
 
     distributePts(src_coord);
     distributePts(src_value, myFMM.SDim);
@@ -384,7 +384,7 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std
     {
         FILE *pfile = fopen("trgValues.txt", "w");
         for (int i = 0; i < trg_coord.size() / 3; i++) {
-            fprintf(pfile, "%12g\t%12g\t%12g, %12g\t%12g\t%12g\n", trg_value[3 * i], trg_value[3 * i + 1],
+            fprintf(pfile, "%12e\t%12e\t%12e, %12e\t%12e\t%12e\n", trg_value[3 * i], trg_value[3 * i + 1],
                     trg_value[3 * i + 2], trg_value_true[3 * i], trg_value_true[3 * i + 1], trg_value_true[3 * i + 2]);
         }
         fclose(pfile);

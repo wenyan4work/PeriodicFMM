@@ -37,7 +37,7 @@ void runFMM(std::vector<double> &trgValueWall, std::vector<double> &trgCoordWall
         std::cout << "omp threads: " << omp_get_max_threads() << std::endl;
     }
 
-    FMM_WrapperWall2D myFMM(p, 4000, 0, pset);
+    FMM_WrapperWall2D myFMM(p, 2000, 0, pset);
     myFMM.FMM_SetBox(shift, shift + box, shift, shift + box, shift, shift + box * 0.5 * (1 - EPS / 10));
 
     // FMM 1, Wall
@@ -647,7 +647,7 @@ void dumpGrid(std::vector<double> &src_value, std::vector<double> &src_coord, co
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    FMM_WrapperWall2D myFMM(p, 4000, 0, pset);
+    FMM_WrapperWall2D myFMM(p, 2000, 0, pset);
     myFMM.FMM_SetBox(shift, shift + box, shift, shift + box, shift, shift + box * 0.5 * (1 - EPS / 10));
     MPI_Barrier(MPI_COMM_WORLD);
 
