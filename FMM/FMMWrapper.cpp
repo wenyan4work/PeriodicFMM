@@ -421,25 +421,34 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
 #endif
 }
 
-void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
+void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val_ptr) {
     FMM_DataClear();
 
     // sanity check
     // Depending on the kernel, use SDim and TDim instead of 3
-    if (src_val == nullptr) {
+    if (src_val_ptr == nullptr) {
         printf("Error, no source value\n");
         exit(1);
     }
-    const int nsrc = src_val->size() / SDim;
+    auto &src_val = *src_val_ptr;
+    const int nsrc = src_val.size() / SDim;
     if (nsrc * 3 != treeData.src_coord.Dim()) {
         printf("src_val size error\n");
         exit(1);
+    }
+    const double scaleFactor = this->scaleFactor;
+    if (regularized) {
+        // scale the epsilon regularize factor
+#pragma omp parallel for
+        for (int i = 0; i < nsrc; i++) {
+            src_val[i * SDim + SDim - 1] *= scaleFactor;
+        }
     }
 
     trg_val.resize(TDim * n_trg);
 
     myTimer.start();
-    PtFMM_Evaluate(treePtr, trg_val, n_trg, src_val, nullptr);
+    PtFMM_Evaluate(treePtr, trg_val, n_trg, src_val_ptr, nullptr);
     myTimer.stop("Stokes Near Field");
 
     if (pbc != NONE) {
@@ -455,6 +464,13 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
         trg_val[TDim * i] *= scaleFactor;
         trg_val[TDim * i + 1] *= scaleFactor;
         trg_val[TDim * i + 2] *= scaleFactor;
+    }
+    if (regularized) {
+        // scale the epsilon regularize factor back to the original input value
+#pragma omp parallel for
+        for (int i = 0; i < nsrc; i++) {
+            src_val[i * SDim + SDim - 1] *= (1 / scaleFactor);
+        }
     }
 
 #ifdef FMMTIMING

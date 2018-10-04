@@ -361,17 +361,20 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std
     distributePts(trg_coord);
     distributePts(trg_value, myFMM.TDim);
 
+    std::cout << "Set Box" << std::endl;
     myFMM.FMM_SetBox(shift, shift + box, shift, shift + box, shift, shift + box);
 
-    std::cout << "FMM" << std::endl;
+    std::cout << "Update Tree" << std::endl;
     myFMM.FMM_UpdateTree(src_coord, trg_coord);
 
     // run a 'noisy fmm' first, to check the old data is properly cleared by DataClear().
     std::vector<double> src_noise = src_value;
     std::fill(src_noise.begin(), src_noise.end(), 1.0);
+    std::cout << "Run FMM 1" << std::endl;
     myFMM.FMM_Evaluate(trg_value, trg_coord.size() / 3, &src_noise);
 
     myFMM.FMM_DataClear();
+    std::cout << "Run FMM 2" << std::endl;
     myFMM.FMM_Evaluate(trg_value, trg_coord.size() / 3, &src_value);
     std::cout << "Tree Evaluated" << std::endl;
 
