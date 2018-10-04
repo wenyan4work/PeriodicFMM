@@ -31,5 +31,6 @@
 ///
 void reg_stokelset(const std::vector<double> &src_points, const std::vector<double> &forces,
                    const std::vector<double> &eval_pnts, std::vector<double> &values);
-
+void combined_flow(const std::vector<double> &src_points, const std::vector<double> &src_values,
+                   const std::vector<double> &eval_pnts, std::vector<double> &values);
 #endif

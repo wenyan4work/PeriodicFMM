@@ -79,8 +79,9 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
 
 FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_, bool reg)
     : mult_order(mult_order), max_pts(max_pts), init_depth(init_depth), pbc(pbc_), xlow(0), xhigh(1), ylow(0), yhigh(1),
-      zlow(0), zhigh(1), scaleFactor(1), xshift(0), yshift(0), zshift(0), regularized(reg), SDim(reg ? 4 : 3), TDim(3),
-      kernelG(reg ? pvfmm::StokesRegKernel<double>::Vel() : pvfmm::StokesKernel<double>::velocity())
+      zlow(0), zhigh(1), scaleFactor(1), xshift(0), yshift(0), zshift(0), regularized(reg), SDim(reg ? 7 : 3),
+      TDim(reg ? 6 : 3),
+      kernelG(reg ? pvfmm::StokesRegKernel<double>::FTVelOmega() : pvfmm::StokesKernel<double>::velocity())
 #ifndef FMMTIMING
       ,
       myTimer(false)
@@ -430,48 +431,57 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
         printf("Error, no source value\n");
         exit(1);
     }
-    auto &src_val = *src_val_ptr;
-    const int nsrc = src_val.size() / SDim;
+    const int nsrc = src_val_ptr->size() / SDim;
     if (nsrc * 3 != treeData.src_coord.Dim()) {
         printf("src_val size error\n");
         exit(1);
     }
+    srcValueScaled = *src_val_ptr;
     const double scaleFactor = this->scaleFactor;
     if (regularized) {
         // scale the epsilon regularize factor
+        // the torque term should also be scaled
 #pragma omp parallel for
         for (int i = 0; i < nsrc; i++) {
-            src_val[i * SDim + SDim - 1] *= scaleFactor;
+            // srcValueScaled[i * SDim + SDim - 4] = scaleFactor;
+            // srcValueScaled[i * SDim + SDim - 3] = scaleFactor;
+            // srcValueScaled[i * SDim + SDim - 2] = scaleFactor;
+            srcValueScaled[i * SDim + SDim - 1] *= scaleFactor;
         }
     }
 
-    trg_val.resize(TDim * n_trg);
+    trgValueScaled.resize(TDim * n_trg);
 
     myTimer.start();
-    PtFMM_Evaluate(treePtr, trg_val, n_trg, src_val_ptr, nullptr);
+    PtFMM_Evaluate(treePtr, trgValueScaled, n_trg, &srcValueScaled, nullptr);
     myTimer.stop("Stokes Near Field");
 
     if (pbc != NONE) {
         myTimer.start();
         // calcM(treeData.trg_coord, trg_val, *src_val);
-        calcMStokes(trg_val);
+        calcMStokes(trgValueScaled);
         myTimer.stop("Stokes Far Field");
     }
 
-// no rotation
+    // scale back
+    trg_val.resize(n_trg * TDim);
 #pragma omp parallel for
     for (size_t i = 0; i < n_trg; i++) {
-        trg_val[TDim * i] *= scaleFactor;
-        trg_val[TDim * i + 1] *= scaleFactor;
-        trg_val[TDim * i + 2] *= scaleFactor;
-    }
-    if (regularized) {
-        // scale the epsilon regularize factor back to the original input value
-#pragma omp parallel for
-        for (int i = 0; i < nsrc; i++) {
-            src_val[i * SDim + SDim - 1] *= (1 / scaleFactor);
+        for (int j = 0; j < 3; j++) {
+            trg_val[TDim * i + j] = trgValueScaled[TDim * i + j] * scaleFactor;
+        }
+        for (int j = 3; j < TDim; j++) {
+            trg_val[TDim * i + j] = trgValueScaled[TDim * i + j] * scaleFactor * scaleFactor;
         }
     }
+    // if (regularized) {
+    //     // extra scaling for angular velocity
+    //     for (size_t i = 0; i < n_trg; i++) {
+    //         for (int j = 3; j < TDim; j++) {
+    //             trg_val[TDim * i + j] = trgValueScaled[TDim * i + j] * scaleFactor;
+    //         }
+    //     }
+    // }
 
 #ifdef FMMTIMING
     myTimer.dump();

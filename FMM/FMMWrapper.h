@@ -65,6 +65,9 @@ class FMM_Wrapper {
 
     void calcMStokes(std::vector<double> &trgValue);
 
+    std::vector<double> srcValueScaled;
+    std::vector<double> trgValueScaled;
+
     int pEquiv;
     int equivN;
     double scaleLEquiv;            // = 1.05;

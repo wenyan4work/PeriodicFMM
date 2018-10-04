@@ -135,18 +135,11 @@ void calcTrueValueN2(std::vector<double> &trg_value_true, const std::vector<doub
 
     if (reg) {
         const int n_trg = trg_coord.size() / 3;
-        std::vector<double> pvel_value(n_trg * 4, 0);
+        trg_value_true.resize(n_trg * 6);
         if (pset == FMM_Wrapper::PAXIS::NONE) {
-            reg_stokelset(src_coord, src_value, trg_coord, pvel_value);
+            combined_flow(src_coord, src_value, trg_coord, trg_value_true);
         }
 
-        trg_value_true.resize(n_trg * 3);
-#pragma omp parallel for
-        for (int i = 0; i < n_trg; i++) {
-            trg_value_true[3 * i + 0] = pvel_value[4 * i + 1];
-            trg_value_true[3 * i + 1] = pvel_value[4 * i + 2];
-            trg_value_true[3 * i + 2] = pvel_value[4 * i + 3];
-        }
     } else {
         // calc Ewald accuracy test
         trg_value_true.resize(trg_coord.size());
@@ -289,13 +282,16 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
     // set src_value
     const int n_src = src_coord.size() / 3;
     std::uniform_real_distribution<> uni(-0.5, 0.5);
-    const int SDim = reg > 0 ? 4 : 3;
+    const int SDim = reg > 0 ? 7 : 3;
     src_value.resize(SDim * n_src);
     if (reg > 0) {
         for (int i = 0; i < n_src; i++) {
             for (int j = 0; j < SDim - 1; j++)
                 src_value[SDim * i + j] = uni(gen);
-            src_value[4 * i + 3] = reg;
+            src_value[SDim * i + SDim - 4] = 0;
+            src_value[SDim * i + SDim - 3] = 0;
+            src_value[SDim * i + SDim - 2] = 0;
+            src_value[SDim * i + SDim - 1] = reg;
         }
     } else {
         for (int i = 0; i < n_src; i++) {
@@ -385,10 +381,25 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord, std
     MPI_Barrier(MPI_COMM_WORLD);
 
     {
-        FILE *pfile = fopen("trgValues.txt", "w");
-        for (int i = 0; i < trg_coord.size() / 3; i++) {
-            fprintf(pfile, "%12e\t%12e\t%12e, %12e\t%12e\t%12e\n", trg_value[3 * i], trg_value[3 * i + 1],
-                    trg_value[3 * i + 2], trg_value_true[3 * i], trg_value_true[3 * i + 1], trg_value_true[3 * i + 2]);
+        FILE *pfile;
+        const int n_trg = trg_coord.size() / 3;
+        const int TDim = myFMM.TDim;
+
+        pfile = fopen("trgValues.txt", "w");
+        for (int i = 0; i < n_trg; i++) {
+            for (int j = 0; j < TDim; j++) {
+                fprintf(pfile, "%.10e\t", trg_value[TDim * i + j]);
+            }
+            fprintf(pfile, "\n");
+        }
+        fclose(pfile);
+
+        pfile = fopen("trgTrueValues.txt", "w");
+        for (int i = 0; i < n_trg; i++) {
+            for (int j = 0; j < TDim; j++) {
+                fprintf(pfile, "%.10e\t", trg_value_true[TDim * i + j]);
+            }
+            fprintf(pfile, "\n");
         }
         fclose(pfile);
     }
