@@ -288,9 +288,6 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value, std
         for (int i = 0; i < n_src; i++) {
             for (int j = 0; j < SDim - 1; j++)
                 src_value[SDim * i + j] = uni(gen);
-            src_value[SDim * i + SDim - 4] = 0;
-            src_value[SDim * i + SDim - 3] = 0;
-            src_value[SDim * i + SDim - 2] = 0;
             src_value[SDim * i + SDim - 1] = reg;
         }
     } else {

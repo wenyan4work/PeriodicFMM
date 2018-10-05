@@ -443,9 +443,9 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
         // the torque term should also be scaled
 #pragma omp parallel for
         for (int i = 0; i < nsrc; i++) {
-            // srcValueScaled[i * SDim + SDim - 4] = scaleFactor;
-            // srcValueScaled[i * SDim + SDim - 3] = scaleFactor;
-            // srcValueScaled[i * SDim + SDim - 2] = scaleFactor;
+            srcValueScaled[i * SDim + SDim - 4] *= scaleFactor;
+            srcValueScaled[i * SDim + SDim - 3] *= scaleFactor;
+            srcValueScaled[i * SDim + SDim - 2] *= scaleFactor;
             srcValueScaled[i * SDim + SDim - 1] *= scaleFactor;
         }
     }
