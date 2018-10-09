@@ -38,7 +38,17 @@ LDFLAGS="-L/.../MacPorts/lib/ -lopenblas" \
 --with-fftw-include="/.../MacPorts/include/" \
 --with-fftw-lib="-L/.../MacPorts/lib/ -lfftw3_threads -lfftw3 -lfftw3f_threads -lfftw3f"
 ```
-The linking flags to BLAS and LAPACK should be specified through 'LDFLAGS'.
+The linking flags to BLAS and LAPACK are specified through 'LDFLAGS'.
+
+Here is an example configure script on Linux with Intel MKL + Intel C++ + Intel MPI
+```bash
+./configure MPICXX=mpicxx --prefix=/..../ \
+CXXFLAGS="-qno-offload -mtune=broadwell -xcore-avx2 -O3 -std=c++14 -DFFTW3_MKL" \
+--with-fftw-include="$MKLROOT/include/fftw" --with-fftw-lib="-lmkl_rt" \
+--with-openmp-flag='qopenmp' \
+```
+The flag `-mtune=broadwell -xcore-avx2` can be changed to match the hardware.
+
 
 After successful configuration, type:
 ```bash
