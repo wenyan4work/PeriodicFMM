@@ -1,23 +1,32 @@
 # PeriodicFMM
-The C++/C/Fortran wrapper for flexibly periodic FMM and operator data generator to be used with PVFMM.
+The C++/C/Fortran/Python wrapper for flexibly periodic FMM and operator data generator to be used with PVFMM.
 
 The flexibly periodic KIFMM algorithm is described in:
-
-Wen Yan & Michael Shelley, Flexibly imposing periodicity in kernel independent FMM: A Multipole-To-Local operator approach
-Journal of Computional Physics, Volume 355, 2018, Pages 214-232, 10.1016/j.jcp.2017.11.012. 
+* Yan, W. & Shelley, M. Flexibly imposing periodicity in kernel independent FMM: A multipole-to-local operator approach. Journal of Computational Physics 355, 214–232 (2018).
 
 The flexibly periodic Stokeslet Image algorithm is described in:
+* Yan, W. & Shelley, M. Universal image systems for non-periodic and periodic Stokes flows above a no-slip wall. Journal of Computational Physics 375, 263–270 (2018).
 
-Wen Yan & Michael Shelley, Universal image systems for non-periodic and periodic Stokes flows above a no-slip wall
-arXiv:1803.02424
-
-Please cite them if you find it useful.  
+Please cite them if you find this package useful.  
 
 Dependency:
 The C++ template library Eigen is necessary to compile the test driver main.cpp. The wrapper class itself (FMMWrapper.h/.cpp) does not rely on Eigen.
 
+## Capability:
+### FMMWrapper.h/.cpp
+* Singular Stokeslet kernel force -> velocity
+* Regularized Stokeslet kernel force + torque + spreading -> velocity + angular velocity 
+
+With NONE/PX/PXY/PXYZ periodicity
+### FMMWrapperWall2D.h/.cpp
+* Singular Stokeslet kernel force -> velocity above a no slip wall
+
+With NONE/PX/PXY periodicity
+
+
 ## How-To:
 
+### 0. Follow `InstallationInstructions.md` to setup the toolchain.
 
 ### 1. Generate the M2L matrix 
 

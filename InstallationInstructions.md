@@ -15,11 +15,11 @@ On Linux, the following combination is recommended:
 * g++ + openmpi/mpich + intel MKL
 * g++ + openmpi/mpich + openblas + fftw-3
 
-When using intel MKL, make sure that the proper OpenMP runtime library is linked, and never link one executable to multiple OpenMP runtime libraries. Read the 'linking in detail' section of the intel MKL documentation carefully if you have any questions. Note that the intel linking advisor sometimes gives wrong combinations of linking line.
+When using intel MKL, make sure that the proper OpenMP runtime library is linked, and never link one executable to multiple OpenMP runtime libraries. Read the `linking in detail` section of the intel MKL documentation carefully if you have any questions. Note that the intel linking advisor sometimes gives wrong combinations of linking line.
 
 On Macs, the situation is very complicated because macOS's default toolchain is completely broken in terms of OpenMP. 
 Macports is recommended (instead of homebrew) because it allows you to compile the toolchain from scratch and completely independent of macOS's default broken toolchain. 
-Further, if you want to use MKL make sure you use clang++ (from Macports) as the mpi compiler and link all executables and libraries to intel OpenMP runtime library instead of libomp carried by clang++, using the -fopenmp=libiomp5 flag. 
+Further, if you want to use MKL make sure you use clang++ (from Macports) as the mpi compiler and link all executables and libraries to intel OpenMP runtime library instead of libomp carried by clang++, using the `-fopenmp=libiomp5` flag. 
 Otherwise, you have only one choice:
 * clang++/g++ + openmpi/mpich + openblas + fftw-3
 
@@ -38,7 +38,7 @@ LDFLAGS="-L/.../MacPorts/lib/ -lopenblas" \
 --with-fftw-include="/.../MacPorts/include/" \
 --with-fftw-lib="-L/.../MacPorts/lib/ -lfftw3_threads -lfftw3 -lfftw3f_threads -lfftw3f"
 ```
-The linking flags to BLAS and LAPACK are specified through 'LDFLAGS'.
+The linking flags to BLAS and LAPACK are specified through `LDFLAGS`.
 
 Here is an example configure script on Linux with Intel MKL + Intel C++ + Intel MPI
 ```bash
