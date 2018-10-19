@@ -9,7 +9,6 @@
 #include <iostream>
 
 #include <Eigen/Dense>
-#include <boost/math/special_functions/erf.hpp>
 
 #include "../../Util/SVD_pvfmm.hpp"
 
@@ -19,8 +18,8 @@
 
 using EVec3 = Eigen::Vector3d;
 
-inline double ERFC(double x) { return boost::math::erfc(x); }
-inline double ERF(double x) { return boost::math::erf(x); }
+inline double ERFC(double x) { return std::erfc(x); }
+inline double ERF(double x) { return std::erf(x); }
 
 inline EVec3 gKernel(const EVec3 &target, const EVec3 &source) {
     EVec3 rst = target - source;

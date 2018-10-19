@@ -226,13 +226,13 @@ void SVD(const size_t dim[2], T *U_, T *S_, T *V_, T eps = -1) {
         for (size_t i = 0; i < dim[1]; i++)
             S_max = (S_max > S(i, i) ? S_max : S(i, i));
 
-        while (k0 < dim[1] - 1 && std::fabs<T>(S(k0, k0 + 1)) <= eps * S_max)
+        while (k0 < dim[1] - 1 && std::abs<T>(S(k0, k0 + 1)) <= eps * S_max)
             k0++;
         if (k0 == dim[1] - 1)
             continue;
 
         size_t n = k0 + 2;
-        while (n < dim[1] && std::fabs<T>(S(n - 1, n)) > eps * S_max)
+        while (n < dim[1] && std::abs<T>(S(n - 1, n)) > eps * S_max)
             n++;
 
         T alpha = 0;
@@ -300,7 +300,7 @@ void SVD(const size_t dim[2], T *U_, T *S_, T *V_, T eps = -1) {
                 }
             }
             for (size_t i = 0; i < dim[1] - 1; i++) {
-                if (std::fabs<T>(S(i, i + 1)) <= eps * S_max) {
+                if (std::abs<T>(S(i, i + 1)) <= eps * S_max) {
                     S(i, i + 1) = 0;
                 }
             }
@@ -342,7 +342,7 @@ template <class T>
 inline void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA, T *S, T *U, int *LDU, T *VT, int *LDVT,
                 T *WORK, int *LWORK, int *INFO) {
 
-    const size_t dim[2] = {std::max(*N, *M), std::min(*N, *M)};
+    const size_t dim[2] = {static_cast<size_t>(std::max(*N, *M)), static_cast<size_t>(std::min(*N, *M))};
 
     std::vector<T> Udata(dim[0] * dim[0], 0);
     std::vector<T> Vdata(dim[1] * dim[1], 0);
@@ -414,7 +414,7 @@ inline void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA, T *S, T
     //	mem::aligned_delete < T > (V_);
 
     if (0) { // Verify
-        const size_t dim[2] = {std::max(*N, *M), std::min(*N, *M)};
+        const size_t dim[2] = {static_cast<size_t>(std::max(*N, *M)), static_cast<size_t>(std::min(*N, *M))};
         const size_t lda = *LDA;
         const size_t ldu = *LDU;
         const size_t ldv = *LDVT;

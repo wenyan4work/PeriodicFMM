@@ -17,14 +17,13 @@
 #include <cmath>
 
 #include <Eigen/Dense>
-#include <boost/math/special_functions/erf.hpp>
 
 constexpr int DIRECTLAYER = 2;
 constexpr double PI314 = 3.1415926535897932384626433;
 
-inline double ERFC(double x) { return boost::math::erfc(x); }
+inline double ERFC(double x) { return std::erfc(x); }
 
-inline double ERF(double x) { return boost::math::erf(x); }
+inline double ERF(double x) { return std::erf(x); }
 
 inline double boxperiodic(double x, double xlow, double xhigh) {
     double temp = (x - xlow) / (xhigh - xlow);

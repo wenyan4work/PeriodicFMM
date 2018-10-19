@@ -9,16 +9,14 @@
 #include <iostream>
 
 #include <Eigen/Dense>
-#include <boost/math/special_functions/erf.hpp>
 
 #include "../../Util/SVD_pvfmm.hpp"
 
 #define DIRECTLAYER 2
 #define PI314 (3.1415926535897932384626433)
 
-inline double ERFC(double x) { return boost::math::erfc(x); }
-
-inline double ERF(double x) { return boost::math::erf(x); }
+inline double ERFC(double x) { return std::erfc(x); }
+inline double ERF(double x) { return std::erf(x); }
 
 /*
  * def AEW(xi,rvec):
