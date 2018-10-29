@@ -42,19 +42,19 @@ class FMM_WrapperWall2D {
     double zlow, zhigh;
 
     // for Stokes FMM
-    pvfmm::PtFMM matrixStokes;
-    pvfmm::PtFMM_Tree *treePtrStokes;
-    pvfmm::PtFMM_Data treeDataStokes;
+    pvfmm::PtFMM<double> matrixStokes;
+    pvfmm::PtFMM_Tree<double> *treePtrStokes;
+    pvfmm::PtFMM_Data<double> treeDataStokes;
 
     // for Laplace Charge FMM
-    pvfmm::PtFMM matrixLapCharge;
-    pvfmm::PtFMM_Tree *treePtrLapCharge;
-    pvfmm::PtFMM_Data treeDataLapCharge;
+    pvfmm::PtFMM<double> matrixLapCharge;
+    pvfmm::PtFMM_Tree<double> *treePtrLapCharge;
+    pvfmm::PtFMM_Data<double> treeDataLapCharge;
 
     // for Laplace Charge + Dipole FMM
-    pvfmm::PtFMM matrixLapDipole;
-    pvfmm::PtFMM_Tree *treePtrLapDipole;
-    pvfmm::PtFMM_Data treeDataLapDipole;
+    pvfmm::PtFMM<double> matrixLapDipole;
+    pvfmm::PtFMM_Tree<double> *treePtrLapDipole;
+    pvfmm::PtFMM_Data<double> treeDataLapDipole;
 
     const int mult_order;
     const int max_pts;
@@ -102,7 +102,7 @@ class FMM_WrapperWall2D {
     void treeSetupDipole(); // SL+DL
     void treeSetupCharge(); // SL only
 
-    void treePointDump(const pvfmm::PtFMM_Data &);
+    void treePointDump(const pvfmm::PtFMM_Data<double> &);
 
     void sumImageSystem(std::vector<double> &);
 

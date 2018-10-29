@@ -395,7 +395,7 @@ void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, do
 // #endif
 // }
 
-void FMM_WrapperWall2D::treePointDump(const pvfmm::PtFMM_Data &treeData) {
+void FMM_WrapperWall2D::treePointDump(const pvfmm::PtFMM_Data<double> &treeData) {
     const int nsrc = treeData.src_coord.Dim() / 3;
     const int ntrg = treeData.trg_coord.Dim() / 3;
 
@@ -646,7 +646,7 @@ void FMM_WrapperWall2D::sumImageSystem(std::vector<double> &trgValue) {
 }
 
 void FMM_WrapperWall2D::treeStokes() {
-    treePtrStokes = new pvfmm::PtFMM_Tree(MPI_COMM_WORLD);
+    treePtrStokes = new pvfmm::PtFMM_Tree<double>(MPI_COMM_WORLD);
     treeDataStokes.dim = 3;
     treeDataStokes.max_depth = 15;
     treeDataStokes.max_pts = max_pts;
@@ -662,7 +662,7 @@ void FMM_WrapperWall2D::treeStokes() {
 
 void FMM_WrapperWall2D::treeLapDipole() {
     // both SL and DL
-    treePtrLapDipole = new pvfmm::PtFMM_Tree(MPI_COMM_WORLD);
+    treePtrLapDipole = new pvfmm::PtFMM_Tree<double>(MPI_COMM_WORLD);
     treeDataLapDipole.dim = 3;
     treeDataLapDipole.max_depth = 15;
     treeDataLapDipole.max_pts = max_pts;
@@ -675,7 +675,7 @@ void FMM_WrapperWall2D::treeLapDipole() {
 }
 
 void FMM_WrapperWall2D::treeLapCharge() {
-    treePtrLapCharge = new pvfmm::PtFMM_Tree(MPI_COMM_WORLD);
+    treePtrLapCharge = new pvfmm::PtFMM_Tree<double>(MPI_COMM_WORLD);
     treeDataLapCharge.dim = 3;
     treeDataLapCharge.max_depth = 15;
     treeDataLapCharge.max_pts = max_pts;
@@ -707,7 +707,7 @@ void FMM_WrapperWall2D::evalStokes(const int ntrg, std::vector<double> *src_val)
         srcValueStokes[3 * (i + nsrc) + 2] = 0;                      // fz =0
     }
     trgValueStokes.resize(ntrg * 3);
-    PtFMM_Evaluate(treePtrStokes, trgValueStokes, ntrg, &srcValueStokes, nullptr);
+    PtFMM_Evaluate(treePtrStokes, trgValueStokes, ntrg, &srcValueStokes);
     myTimer.stop("Stokes Near Field");
     myTimer.start();
     if (pbc != NONE) {
@@ -774,7 +774,7 @@ void FMM_WrapperWall2D::evalLapCharge(const int ntrg, std::vector<double> *src_v
     }
 
     trgValueLapCharge.resize(ntrg * 4); // value + gradient
-    PtFMM_Evaluate(treePtrLapCharge, trgValueLapCharge, ntrg, &srcValueLapCharge, nullptr);
+    PtFMM_Evaluate(treePtrLapCharge, trgValueLapCharge, ntrg, &srcValueLapCharge);
     myTimer.stop("Lap Charge F Near Field");
     myTimer.start();
     if (pbc != NONE) {

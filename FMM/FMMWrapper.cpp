@@ -295,7 +295,7 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
     if (myRank == 0)
         printf("tree deleted\n");
 
-    treePtr = new pvfmm::PtFMM_Tree(MPI_COMM_WORLD);
+    treePtr = new pvfmm::PtFMM_Tree<double>(MPI_COMM_WORLD);
 
     treeData.dim = 3;
     treeData.max_depth = 15;
@@ -453,7 +453,7 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
     trgValueScaled.resize(TDim * n_trg);
 
     myTimer.start();
-    PtFMM_Evaluate(treePtr, trgValueScaled, n_trg, &srcValueScaled, nullptr);
+    PtFMM_Evaluate(treePtr, trgValueScaled, n_trg, &srcValueScaled);
     myTimer.stop("Stokes Near Field");
 
     if (pbc != NONE) {

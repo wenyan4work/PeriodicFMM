@@ -47,9 +47,9 @@ class FMM_Wrapper {
     double zlow, zhigh;
 
     // for Stokes FMM
-    pvfmm::PtFMM matrix;
-    pvfmm::PtFMM_Tree *treePtr;
-    pvfmm::PtFMM_Data treeData;
+    pvfmm::PtFMM<double> matrix;
+    pvfmm::PtFMM_Tree<double> *treePtr;
+    pvfmm::PtFMM_Data<double> treeData;
 
     double scaleFactor;
     double xshift, yshift, zshift;
