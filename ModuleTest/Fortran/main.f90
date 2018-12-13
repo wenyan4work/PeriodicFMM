@@ -52,7 +52,7 @@ program main
 
    call MPI_BARRIER(MPI_COMM_WORLD, ierror); 
    ! Test FMM
-   fmm = create_fmm_wrapper(8, 2000, 0, 7)
+   fmm = create_fmm_wrapper(8, 2000, 0, 7, 0)
    call FMM_SetBox(fmm, 0.0d+0, 1.0d+0, 0.0d+0, 1.0d+0, 0.0d+0, 1.0d+0); 
    call FMM_UpdateTree(fmm, trgCoord, srcCoord, ntrg, nsrc); 
    call FMM_Evaluate(fmm, trgValue, srcValue, ntrg, nsrc); 

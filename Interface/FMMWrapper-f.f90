@@ -8,7 +8,7 @@ module fmmwrapper
 
    interface
 
-      function create_fmm_wrapper(mult_order, max_pts, init_depth, pbc) result(fmm_wrapper) bind(C, name="create_fmm_wrapper")
+      function create_fmm_wrapper(mult_order, max_pts, init_depth, pbc, regularize) result(fmm_wrapper) bind(C, name="create_fmm_wrapper")
          use iso_c_binding
          implicit none
          type(c_ptr):: fmm_wrapper
@@ -16,6 +16,7 @@ module fmmwrapper
          integer(c_int), value :: max_pts
          integer(c_int), value :: init_depth
          integer(c_int), value :: pbc
+         integer(c_int), value :: regularize
       end function create_fmm_wrapper
 
       subroutine delete_fmm_wrapper(fmm_wrapper) bind(C, name="delete_fmm_wrapper")
