@@ -168,7 +168,7 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
 
         this->pEquiv = mult_order; // (8-1)^2*6 + 2 points
 
-        this->scaleLEquiv = RAD1; // RAD1 = 2.95 defined in pvfmm_common.h
+        this->scaleLEquiv = PVFMM_RAD1; // RAD1 = 2.95 defined in pvfmm_common.h
         this->pCenterLEquiv[0] = -(scaleLEquiv - 1) / 2;
         this->pCenterLEquiv[1] = -(scaleLEquiv - 1) / 2;
         this->pCenterLEquiv[2] = -(scaleLEquiv - 1) / 2;
@@ -261,139 +261,6 @@ void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, do
         printf("scale factor: %f\n", scaleFactor);
     }
 }
-
-// void FMM_WrapperWall2D::treeSetup(pvfmm::PtFMM_Data &treeData, const std::vector<double> &src_coord,
-//                                   const std::vector<double> &trg_coord, bool withOriginal) {
-//     // no rotate, image wall at z = 0.5
-//     //    printf("start setup for treeData\n");
-
-//     const int nsrc = src_coord.size() / 3;
-
-//     if (withOriginal) {
-//         treeData.src_coord.Resize(nsrc * 3 * 2); // including the original
-//     } else {
-//         treeData.src_coord.Resize(nsrc * 3); // image only
-//     }
-
-//     if (pbc == PAXIS::PX) {
-// // original
-// #pragma omp parallel for
-//         for (size_t i = 0; i < nsrc; i++) {
-//             treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
-//             treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
-//             treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-//         }
-//         if (withOriginal) {
-// // image
-// #pragma omp parallel for
-//             for (size_t i = nsrc; i < nsrc * 2; i++) {
-//                 treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
-//                 treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
-//                 treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
-//             }
-//         }
-//     } else if (pbc == PAXIS::PXY) {
-// // original
-// #pragma omp parallel for
-//         for (size_t i = 0; i < nsrc; i++) {
-//             treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
-//             treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
-//             treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-//         }
-//         if (withOriginal) {
-// // image
-// #pragma omp parallel for
-//             for (size_t i = nsrc; i < nsrc * 2; i++) {
-//                 treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
-//                 treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
-//                 treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
-//             }
-//         }
-//     } else {
-// // original
-// #pragma omp parallel for
-//         for (size_t i = 0; i < nsrc; i++) {
-//             treeData.src_coord[3 * i] = ((src_coord[3 * i] + xshift) * scaleFactor);
-//             treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
-//             treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
-//         }
-//         if (withOriginal) {
-// // image
-// #pragma omp parallel for
-//             for (size_t i = nsrc; i < nsrc * 2; i++) {
-//                 treeData.src_coord[3 * i] = treeData.src_coord[3 * (i - nsrc)];
-//                 treeData.src_coord[3 * i + 1] = treeData.src_coord[3 * (i - nsrc) + 1];
-//                 treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * (i - nsrc) + 2];
-//             }
-//         }
-//     }
-
-//     if (!withOriginal) {
-// #pragma omp parallel for
-//         for (size_t i = 0; i < nsrc; i++) {
-//             treeData.src_coord[3 * i + 2] = 1.0 - treeData.src_coord[3 * i + 2];
-//         }
-//     }
-
-//     treeData.surf_coord.Resize(0);
-// #ifdef FMMDEBUG
-//     printf("src_coord setup for treeData\n");
-// #endif
-
-//     // Set target points.
-//     // use the same rotation and periodic wrap as source
-
-//     const int ntrg = trg_coord.size() / 3;
-//     treeData.trg_coord.Resize(ntrg * 3);
-//     // image target values not needed
-//     if (pbc == PAXIS::PX) {
-// // original
-// #pragma omp parallel for
-//         for (size_t i = 0; i < ntrg; i++) {
-//             treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
-//             treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-//             treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-//         }
-
-//     } else if (pbc == PAXIS::PXY) {
-// // original
-// #pragma omp parallel for
-//         for (size_t i = 0; i < ntrg; i++) {
-//             treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
-//             treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-//             treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-//         }
-
-//     } else {
-//         assert(pbc == PAXIS::NONE);
-// #pragma omp parallel for
-//         for (size_t i = 0; i < ntrg; i++) {
-//             treeData.trg_coord[3 * i] = ((trg_coord[3 * i] + xshift) * scaleFactor);
-//             treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-//             treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
-//         }
-//     }
-
-//     // prevent PVFMM from breaking down with coord=1
-//     const int NS = treeData.src_coord.Dim();
-//     const int NT = treeData.trg_coord.Dim();
-//     const double eps = std::numeric_limits<double>::epsilon() * 100;
-// #pragma omp parallel for
-//     for (int i = 0; i < NS; i++) {
-//         if (treeData.src_coord[i] > 1 - eps)
-//             treeData.src_coord[i] = 1 - eps;
-//     }
-// #pragma omp parallel for
-//     for (int i = 0; i < NT; i++) {
-//         if (treeData.trg_coord[i] > 1 - eps)
-//             treeData.trg_coord[i] = 1 - eps;
-//     }
-
-// #ifdef FMMDEBUG
-//     printf("trg_coord setup for treeData\n");
-//     treePointDump(treeData);
-// #endif
-// }
 
 void FMM_WrapperWall2D::treePointDump(const pvfmm::PtFMM_Data<double> &treeData) {
     const int nsrc = treeData.src_coord.Dim() / 3;
@@ -509,7 +376,7 @@ void FMM_WrapperWall2D::calcMStokes() {
 
     // add to trg_value
     const int n_trg = trgCoord.Dim() / 3;
-    assert(trg_coord.Dim() == trg_value.size());
+    assert(trgCoord.Dim() == trgValueStokes.size());
     const double pi = 3.1415926535897932384626433;
 
     int M = 3 * equivN;
@@ -517,7 +384,7 @@ void FMM_WrapperWall2D::calcMStokes() {
     M2Lsource.resize(M);
     assert(M2Lsource.size() == v.Dim());
 
-#pragma omp parallel for
+#pragma omp parallel for default(none) shared(M, N, v, pm2lStokes, M2Lsource)
     for (int i = 0; i < M; i++) {
         double temp = 0;
         //#pragma unroll 4
@@ -850,40 +717,45 @@ void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord, const s
     srcCoordScaled.resize(nsrc * 3);
     trgCoordScaled.resize(ntrg * 3);
 
+    const double xshift = this->xshift;
+    const double yshift = this->yshift;
+    const double zshift = this->zshift;
+    const double scaleFactor = this->scaleFactor;
+
     if (pbc == PAXIS::PX) {
-#pragma omp parallel for
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(srcCoordScaled, srcCoord)
         for (size_t i = 0; i < nsrc; i++) {
             srcCoordScaled[3 * i] = fracwrap((srcCoord[3 * i] + xshift) * scaleFactor);
             srcCoordScaled[3 * i + 1] = ((srcCoord[3 * i + 1] + yshift) * scaleFactor);
             srcCoordScaled[3 * i + 2] = ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
         }
-#pragma omp parallel for
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(trgCoordScaled, trgCoord)
         for (size_t i = 0; i < ntrg; i++) {
             trgCoordScaled[3 * i] = fracwrap((trgCoord[3 * i] + xshift) * scaleFactor);
             trgCoordScaled[3 * i + 1] = ((trgCoord[3 * i + 1] + yshift) * scaleFactor);
             trgCoordScaled[3 * i + 2] = ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else if (pbc == PAXIS::PXY) {
-#pragma omp parallel for
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(srcCoordScaled, srcCoord)
         for (size_t i = 0; i < nsrc; i++) {
             srcCoordScaled[3 * i] = fracwrap((srcCoord[3 * i] + xshift) * scaleFactor);
             srcCoordScaled[3 * i + 1] = fracwrap((srcCoord[3 * i + 1] + yshift) * scaleFactor);
             srcCoordScaled[3 * i + 2] = ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
         }
-#pragma omp parallel for
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(trgCoordScaled, trgCoord)
         for (size_t i = 0; i < ntrg; i++) {
             trgCoordScaled[3 * i] = fracwrap((trgCoord[3 * i] + xshift) * scaleFactor);
             trgCoordScaled[3 * i + 1] = fracwrap((trgCoord[3 * i + 1] + yshift) * scaleFactor);
             trgCoordScaled[3 * i + 2] = ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else {
-#pragma omp parallel for
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(srcCoordScaled, srcCoord)
         for (size_t i = 0; i < nsrc; i++) {
             srcCoordScaled[3 * i] = ((srcCoord[3 * i] + xshift) * scaleFactor);
             srcCoordScaled[3 * i + 1] = ((srcCoord[3 * i + 1] + yshift) * scaleFactor);
             srcCoordScaled[3 * i + 2] = ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
         }
-#pragma omp parallel for
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(trgCoordScaled, trgCoord)
         for (size_t i = 0; i < ntrg; i++) {
             trgCoordScaled[3 * i] = ((trgCoord[3 * i] + xshift) * scaleFactor);
             trgCoordScaled[3 * i + 1] = ((trgCoord[3 * i + 1] + yshift) * scaleFactor);
@@ -895,13 +767,13 @@ void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord, const s
     const double eps = std::numeric_limits<double>::epsilon() * 100;
     const int NS = nsrc * 3;
     const int NT = ntrg * 3;
-#pragma omp parallel for
+#pragma omp parallel for shared(srcCoordScaled)
     for (int i = 0; i < NS; i++) {
         // printf("src scaled %lf\n", srcCoordScaled[i]);
         if (srcCoordScaled[i] > 1 - eps)
             srcCoordScaled[i] = 1 - eps;
     }
-#pragma omp parallel for
+#pragma omp parallel for shared(trgCoordScaled)
     for (int i = 0; i < NT; i++) {
         // printf("trg scaled %lf\n", trgCoordScaled[i]);
         if (trgCoordScaled[i] > 1 - eps)

@@ -22,6 +22,20 @@
 #define EPS (1e-12) // make sure EPS/10 is still valid
 #define MAXP 16
 
+void configure_parser(cli::Parser &parser) {
+    parser.set_optional<int>("P", "periodicity", 0,
+                             "0: NONE. 1: PX. 4:PXY. Default 0");
+    parser.set_optional<int>("T", "ntarget", 2, "target number in each dimension. default 2");
+    parser.set_optional<double>("B", "box", 1.0, "box edge length");
+    parser.set_optional<double>("M", "move", 0.0, "box origin shift move");
+    parser.set_optional<int>("S", "source", 1,
+                             "1 for point force, 2 for force dipole, 4 for quadrupole, other for same as target.");
+    parser.set_optional<double>("Z", "zratio", 0.499, "ratio of z length to box edge length");
+
+    parser.set_optional<int>("R", "randomsource", 1, "1 for random points, 0 for chebyshev mesh");
+    parser.set_optional<int>("C", "randomtarget", 1, "1 for random points, 0 for chebyshev mesh");
+}
+
 void runFMM(std::vector<double> &trgValueWall, std::vector<double> &trgCoordWall, std::vector<double> &trgValuePBC,
             std::vector<double> &trgCoordPBC, std::vector<double> &trgValueSample, std::vector<double> &trgCoordSample,
             std::vector<double> &src_value, std::vector<double> &src_coord, const int p, const double box,
@@ -586,20 +600,6 @@ void checkErrorSample(std::vector<double> &trg_value, std::vector<double> &trg_v
     printf("RMS Error L2: %g\n", sqrt(errorL2 / trg_value_true.size()));
     printf("Relative Error L2: %g\n", sqrt(errorL2 / L2));
     MPI_Barrier(MPI_COMM_WORLD);
-}
-
-void configure_parser(cli::Parser &parser) {
-    parser.set_optional<int>("P", "periodicity", 0,
-                             "0: NONE. 1: PX. 2:PY. 3:PZ. 4:PXY. 5:PXZ. 6:PYZ. 7:PXYZ. Default 0");
-    parser.set_optional<int>("T", "ntarget", 2, "target number in each dimension. default 2");
-    parser.set_optional<double>("B", "box", 1.0, "box edge length");
-    parser.set_optional<double>("M", "move", 0.0, "box origin shift move");
-    parser.set_optional<int>("S", "source", 1,
-                             "1 for point force, 2 for force dipole, 4 for quadrupole, other for same as target.");
-    parser.set_optional<double>("Z", "zratio", 0.499, "ratio of z length to box edge length");
-
-    parser.set_optional<int>("R", "randomsource", 1, "1 for random points, 0 for chebyshev mesh");
-    parser.set_optional<int>("C", "randomtarget", 1, "1 for random points, 0 for chebyshev mesh");
 }
 
 void dumpGrid(std::vector<double> &src_value, std::vector<double> &src_coord, const int p, const double box,

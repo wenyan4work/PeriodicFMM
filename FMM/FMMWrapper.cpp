@@ -186,7 +186,7 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
 
         this->pEquiv = mult_order; // (8-1)^2*6 + 2 points
 
-        this->scaleLEquiv = RAD1; // RAD1 = 2.95 defined in pvfmm_common.h
+        this->scaleLEquiv = PVFMM_RAD1; // RAD1 = 2.95 defined in pvfmm_common.h
         this->pCenterLEquiv[0] = -(scaleLEquiv - 1) / 2;
         this->pCenterLEquiv[1] = -(scaleLEquiv - 1) / 2;
         this->pCenterLEquiv[2] = -(scaleLEquiv - 1) / 2;
@@ -526,7 +526,7 @@ void FMM_Wrapper::calcMStokes(std::vector<double> &trgValue) {
 
     // add to trg_value
     const int n_trg = trgCoord.Dim() / 3;
-    assert(trg_value.size() == n_trg * TDim);
+    assert(trgValue.size() == n_trg * TDim);
 
     int M = 3 * equivN;
     int N = 3 * equivN; // checkN = equivN in this code.

@@ -1,4 +1,4 @@
-SFTPATH=$(HOME)/local
+SFTPATH=/mnt/home/wyan/local
 
 include $(PVFMM_DIR)/MakeVariables
 EIGEN= $(SFTPATH)/include/eigen3
