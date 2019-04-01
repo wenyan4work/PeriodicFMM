@@ -19,7 +19,7 @@
 #include <Eigen/Dense>
 #include <mpi.h>
 
-constexpr int MAXP = 12;
+constexpr int MAXP = 16;
 
 void configure_parser(cli::Parser &parser) {
     parser.set_optional<int>("P", "periodicity", 0, "0: NONE. 1: PX. 4:PXY. 7:PXYZ. Default 0");
