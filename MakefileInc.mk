@@ -1,32 +1,25 @@
-SFTPATH=$(HOME)/local
-
-include $(PVFMM_DIR)/MakeVariables
-EIGEN= $(SFTPATH)/include/eigen3
-PVFMM= $(SFTPATH)/include/pvfmm
-
-USERINCLUDE = -I$(EIGEN) -I./
-USERLIB_DIRS = -L$(SFTPATH)/lib
-
 CXX= mpicxx
 LINK= $(CXX)
 
 # optimized
-CXXFLAGS= $(CXXFLAGS_PVFMM) 
-LINKFLAGS= $(CXXFLAGS) $(LDLIBS_PVFMM) 
+CFLAGS=-std=c99 -O3 -fopenmp
+# TODO: automate detection of eigen directory (using cmake probably)
+CXXFLAGS=-I$(CONDA_PREFIX)/include/eigen3 -fopenmp -O3
+LINKFLAGS=-lpvfmm -lstdc++ -fopenmp -lfftw3 -lblas -lmpi_cxx -lm
 
 # debug
-DEBUGMODE:= no
+DEBUGMODE:=no
 
 # debug flags
-# CXXFLAGS += -DFMMTIMING 
+# CXXFLAGS += -DFMMTIMING
 # CXXFLAGS += -DFMMDEBUG
 
 ifeq ($(DEBUGMODE), yes)
-CXXFLAGS:= $(subst -O3, ,$(CXXFLAGS))
-LINKFLAGS:= $(subst -O3, ,$(LINKFLAGS))
-CXXFLAGS := $(CXXFLAGS) -O0 -g
-LINKFLAGS := $(LINKFLAGS) -O0 -g
+	CXXFLAGS:=$(subst -O3, ,$(CXXFLAGS))
+	LINKFLAGS:=$(subst -O3, ,$(LINKFLAGS))
+	CXXFLAGS:=$(CXXFLAGS) -O0 -g
+	LINKFLAGS:=$(LINKFLAGS) -O0 -g
 else
-CXXFLAGS:= $(CXXFLAGS) -DNDEBUG
-LINKFLAGS:= $(LINKFLAGS) -DNDEBUG
+	CXXFLAGS:=$(CXXFLAGS) -DNDEBUG
+	LINKFLAGS:=$(LINKFLAGS) -DNDEBUG
 endif
