@@ -62,10 +62,20 @@ if (OpenMP_CXX_FLAGS)
   set_target_properties(PeriodicFMM_static PROPERTIES COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
 endif()
 
-# set_target_properties(PeriodicFMM PROPERTIES PUBLIC_HEADER "\
-# ")
+set_target_properties(PeriodicFMM PROPERTIES PUBLIC_HEADER "\
+include/FMM/EigenDef.hpp;\
+include/FMM/FMMWrapper-c.h;\
+include/FMM/FMMWrapper.hpp;\
+include/FMM/FMMWrapperWall2D-c.h;\
+include/FMM/FMMWrapperWall2D.hpp;\
+include/FMM/LaplaceLayerKernel.hpp;\
+include/FMM/SVD_pvfmm.hpp;\
+include/FMM/StokesRegSingleLayerKernel.hpp;\
+include/FMM/Timer.hpp;\
+include/FMM/cmdparser.hpp")
 
-# install(TARGETS PeriodicFMM
-#   ARCHIVE DESTINATION lib
-#   PUBLIC_HEADER DESTINATION include
-#   )
+install(TARGETS PeriodicFMM PeriodicFMM_static
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  PUBLIC_HEADER DESTINATION include/FMM
+  )
