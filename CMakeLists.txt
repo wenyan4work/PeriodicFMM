@@ -40,10 +40,21 @@ set(PeriodicFMM_SOURCES
 
 add_library(PeriodicFMM SHARED ${PeriodicFMM_SOURCES})
 add_library(PeriodicFMM_static STATIC ${PeriodicFMM_SOURCES})
+target_link_libraries(PeriodicFMM ${MPI_LIBRARIES})
+target_link_libraries(PeriodicFMM_static ${MPI_LIBRARIES})
 
 if (MPI_COMPILE_FLAGS)
+  message("Setting MPI compile flags")
   set_target_properties(PeriodicFMM PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
   set_target_properties(PeriodicFMM_static PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+endif()
+
+if(MPI_LINK_FLAGS)
+  message("Setting MPI link flags")
+  set_target_properties(PeriodicFMM PROPERTIES
+    LINK_FLAGS "${MPI_LINK_FLAGS}")
+  set_target_properties(PeriodicFMM_static PROPERTIES
+    LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif()
 
 if (OpenMP_CXX_FLAGS)
