@@ -9,7 +9,7 @@ SRC =   main.cpp ChebNodal.cpp regularized_stokeslet.cpp ../../FMM/FMMWrapper.cp
 INC =   ChebNodal.h Ewald.hpp regularized_stokeslet.hpp ../../FMM/FMMWrapper.h
 
 # Definitions
-CXXFLAGS += -DFMMTIMING
+CXXFLAGS += -DFMMTIMING -Wall -Wno-sign-compare -Wno-unused
 
 EXE =   TestStokes3D.X
 OBJ =   $(SRC:.cpp=.o)

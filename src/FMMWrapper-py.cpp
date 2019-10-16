@@ -5,8 +5,8 @@
 #include <cstdio>
 #include <vector>
 
-#include <FMMWrapper.hpp>
-#include <FMMWrapperWall2D.hpp>
+#include <FMM/FMMWrapper.hpp>
+#include <FMM/FMMWrapperWall2D.hpp>
 
 namespace p = boost::python;
 namespace np = boost::python::numpy;
