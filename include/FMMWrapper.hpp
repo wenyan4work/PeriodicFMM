@@ -13,7 +13,7 @@
 #include <mpi.h>
 #include <pvfmm.hpp>
 
-#include "Util/Timer.hpp"
+#include <Timer.hpp>
 
 class FMM_Wrapper {
   public:

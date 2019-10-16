@@ -1,12 +1,12 @@
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
 #include <iostream>
-#include <math.h>
-#include <stdio.h>
+#include <cmath>
+#include <cstdio>
 #include <vector>
 
-#include <FMM/FMMWrapper.h>
-#include <FMM/FMMWrapperWall2D.h>
+#include <FMMWrapper.hpp>
+#include <FMMWrapperWall2D.hpp>
 
 namespace p = boost::python;
 namespace np = boost::python::numpy;
