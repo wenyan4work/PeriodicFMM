@@ -10,11 +10,12 @@
 #include <iostream>
 
 #include <Eigen/Dense>
-
-#include "../../Util/SVD_pvfmm.hpp"
+#include <FMM/SVD_pvfmm.hpp>
 
 #define DIRECTLAYER 2
 #define PI314 (static_cast<double>(3.1415926535897932384626433))
+
+namespace Laplace2D3D {
 
 using EVec3 = Eigen::Vector3d;
 
@@ -318,15 +319,22 @@ int main(int argc, char **argv) {
     }
 
     for (int p = 0; p < equivN; p++) {
-        Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1], pointLEquiv[3 * p + 2]);
-        UsampleSP += gKernel(samplePoint, Lpoint) * M2Lsource[p];
+      Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1],
+                             pointLEquiv[3 * p + 2]);
+      UsampleSP += gKernel(samplePoint, Lpoint) * M2Lsource[p];
     }
 
     std::cout << "samplePoint:" << samplePoint << std::endl;
     std::cout << "Usample NF:" << Usample << std::endl;
     std::cout << "Usample FF:" << UsampleSP << std::endl;
     std::cout << "Usample FF+NF total:" << UsampleSP + Usample << std::endl;
-    std::cout << "Error : " << UsampleSP + Usample - 2.284722293289131159 << std::endl;
+    std::cout << "Error : " << UsampleSP + Usample - 2.284722293289131159
+              << std::endl;
 
     return 0;
 }
+
+} // namespace Laplace2D3D
+
+#undef DIRECTLAYER
+#undef PI314

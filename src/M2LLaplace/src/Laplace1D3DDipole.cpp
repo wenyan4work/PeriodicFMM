@@ -10,99 +10,18 @@
 
 #include <Eigen/Dense>
 
-#include "../../Util/SVD_pvfmm.hpp"
+#include <FMM/SVD_pvfmm.hpp>
 
 #define DIRECTLAYER 2
 #define PI314 (static_cast<double>(3.1415926535897932384626433))
 #define E271 (static_cast<double>(2.7182818284590452354))
 
+namespace Laplace1D3DDipole {
+
 using EVec3 = Eigen::Vector3d;
 
 inline double ERFC(double x) { return std::erfc(x); }
 inline double ERF(double x) { return std::erf(x); }
-
-// real and wave sum of 2D Laplace kernel Ewald
-
-// xm: target, xn: source
-inline EVec3 realSum(const double xi, const EVec3 &xn, const EVec3 &xm) {
-    EVec3 rmn = xm - xn;
-    double rnorm = rmn.norm();
-    if (rnorm < 1e-14) {
-        return EVec3(0, 0, 0);
-    }
-    return (2 * xi * exp(-xi * xi * rnorm * rnorm) / (sqrt(PI314) * rnorm * rnorm) + ERFC(xi * rnorm) / pow(rnorm, 3)) *
-           rmn;
-}
-
-// xm: target, xn: source
-inline double realSum2(const double xi, const EVec3 &xn, const EVec3 &xm) {
-    double zmn = xm[2] - xn[2];
-    double answer = -sqrt(PI314) * ERF(xi * (zmn));
-    return answer;
-}
-
-inline double gkzxi(const double k, double zmn, double xi) {
-    double answer = exp(k * zmn) * ERFC(k / (2 * xi) + xi * zmn) + exp(-k * zmn) * ERFC(k / (2 * xi) - xi * zmn);
-    return answer;
-}
-
-// z=zmn, target-source
-inline double g2kzxi(const double k, double z, double xi) {
-    double answer = (2 * exp(-(k * z) - pow(k / (2. * xi) - xi * z, 2)) * xi) / sqrt(PI314) -
-                    (2 * exp(k * z - pow(k / (2. * xi) + xi * z, 2)) * xi) / sqrt(PI314) -
-                    (k * ERFC(k / (2. * xi) - xi * z)) / exp(k * z) + exp(k * z) * k * ERFC(k / (2. * xi) + xi * z);
-    return -answer;
-}
-
-inline EVec3 gKernelEwald(const EVec3 &xm, const EVec3 &xn) {
-    const double xi = 1.8; // recommend for box=1 to get machine precision
-    EVec3 target = xm;
-    EVec3 source = xn;
-    target[0] = target[0] - floor(target[0]); // periodic BC
-    target[1] = target[1] - floor(target[1]);
-    source[0] = source[0] - floor(source[0]);
-    source[1] = source[1] - floor(source[1]);
-
-    // real sum
-    int rLim = 6;
-    EVec3 Kreal(0, 0, 0);
-    for (int i = -rLim; i <= rLim; i++) {
-        for (int j = -rLim; j <= rLim; j++) {
-            EVec3 rmn = target - source + EVec3(i, j, 0);
-            if (rmn.norm() < 1e-13) {
-                continue;
-            }
-            Kreal += realSum(xi, EVec3(0, 0, 0), rmn);
-        }
-    }
-
-    // wave sum
-    int wLim = 6;
-    EVec3 Kwave(0, 0, 0);
-    EVec3 rmn = target - source;
-    const double rmnnorm = rmn.norm();
-    const double zmn = rmn[2];
-    rmn[2] = 0;
-    for (int i = -wLim; i <= wLim; i++) {
-        for (int j = -wLim; j <= wLim; j++) {
-            if (i == 0 && j == 0) {
-                continue;
-            }
-            EVec3 kvec = EVec3(i, j, 0) * (2 * PI314);
-            double knorm = kvec.norm();
-            double prefac = sin(kvec[0] * rmn[0] + kvec[1] * rmn[1]) / knorm;
-            Kwave[0] += prefac * kvec[0] * gkzxi(knorm, zmn, xi);
-            Kwave[1] += prefac * kvec[1] * gkzxi(knorm, zmn, xi);
-            Kwave[2] += (cos(kvec[0] * rmn[0] + kvec[1] * rmn[1]) / knorm) * g2kzxi(knorm, zmn, xi);
-        }
-    }
-    Kwave *= PI314;
-
-    EVec3 Kreal2(0, 0, 0);
-    Kreal2[2] = 2 * sqrt(PI314) * realSum2(xi, source, target);
-
-    return Kreal + Kwave - Kreal2;
-}
 
 inline EVec3 gKernel(const EVec3 &target, const EVec3 &source) {
     EVec3 rst = target - source;
@@ -114,24 +33,25 @@ inline EVec3 gKernel(const EVec3 &target, const EVec3 &source) {
     }
 }
 
+inline EVec3 gKernelPBC(const EVec3 &target, const EVec3 &source) {
+
+    EVec3 gvec = gKernel(target, source);
+    for (int i = 1; i < 500000; i++) {
+        gvec += (gKernel(target, source + EVec3(i, 0, 0)) + gKernel(target, source + EVec3(-i, 0, 0)));
+    }
+    return gvec;
+}
+
 // Out of Direct Sum Layer, far field part
 inline EVec3 gKernelFF(const EVec3 &target, const EVec3 &source) {
-    EVec3 fEwald = gKernelEwald(target, source);
+    EVec3 fPBC(0, 0, 0);
     const int N = DIRECTLAYER;
     const double L3 = 1.0;
-    for (int i = -N; i < N + 1; i++) {
-        for (int j = -N; j < N + 1; j++) {
-            EVec3 gFree = gKernel(target, source - EVec3(i, j, 0));
-            fEwald -= gFree;
-        }
+    for (int t = DIRECTLAYER + 1; t < 500000; t++) {
+        fPBC += gKernel(target, source + EVec3(t * L3, 0, 0)) + gKernel(target, source - EVec3(t * L3, 0, 0));
     }
 
-    // {
-    //   std::cout << "source:" << source << std::endl
-    //             << "target:" << target << std::endl
-    //             << "gKernalFF" << fEwald << std::endl;
-    // }
-    return fEwald;
+    return fPBC;
 }
 
 /**
@@ -188,22 +108,6 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
 int main(int argc, char **argv) {
     Eigen::initParallel();
     Eigen::setNbThreads(1);
-
-    // testing Ewald routine
-    double zeroTest = gKernelEwald(EVec3(0.5, 0.5, 0.5), EVec3(0.5, 0.5, 0.5)).dot(EVec3(1, 1, 1));
-    std::cout << std::setprecision(16) << "zeroTest: " << zeroTest << std::endl;
-
-    double centerTest = gKernelEwald(EVec3(0, 0, 0), EVec3(0.5, 0.5, 0.5)).dot(EVec3(0.5, 0.5, 0.5));
-    std::cout << std::setprecision(16) << "centerTest: " << centerTest
-              << " error: " << centerTest + 2.7491275138731747774 << std::endl;
-
-    centerTest = gKernelEwald(EVec3(0.2, 0.3, 0.4), EVec3(0.3, 0.6, 0.5)).dot(EVec3(3, 2, 1));
-    std::cout << std::setprecision(16) << "centerTest2: " << centerTest
-              << " error: " << centerTest + 24.54255829939675948 << std::endl;
-
-    centerTest = gKernelEwald(EVec3(0.7, 0.9, 0.7), EVec3(0.2, 0.3, 0.4)).dot(EVec3(0.1, 2, 0.3));
-    std::cout << std::setprecision(16) << "centerTest2: " << centerTest
-              << " error: " << centerTest - 0.36577859302782289586 << std::endl;
 
     const int pEquiv = atoi(argv[1]); // (8-1)^2*6 + 2 points
     const int pCheck = atoi(argv[1]);
@@ -327,24 +231,33 @@ int main(int argc, char **argv) {
     double UsampleSP = 0;
 
     for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
-        for (int j = -DIRECTLAYER; j < 1 + DIRECTLAYER; j++) {
-            for (int p = 0; p < dipolePoint.size(); p++) {
-                Usample += gKernel(samplePoint, dipolePoint[p] + EVec3(i, j, 0)).dot(dipoleValue[p]);
-            }
+        for (int p = 0; p < dipolePoint.size(); p++) {
+            Usample += gKernel(samplePoint, dipolePoint[p] + EVec3(i, 0, 0)).dot(dipoleValue[p]);
         }
     }
 
     for (int p = 0; p < equivN; p++) {
-        Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1], pointLEquiv[3 * p + 2]);
-        EVec3 M2Lsp(M2Lsource[3 * p], M2Lsource[3 * p + 1], M2Lsource[3 * p + 2]);
-        UsampleSP += gKernel(samplePoint, Lpoint).dot(M2Lsp);
+      Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1],
+                             pointLEquiv[3 * p + 2]);
+      EVec3 M2Lsp(M2Lsource[3 * p], M2Lsource[3 * p + 1], M2Lsource[3 * p + 2]);
+      UsampleSP += gKernel(samplePoint, Lpoint).dot(M2Lsp);
     }
 
     std::cout << "samplePoint:" << samplePoint << std::endl;
     std::cout << "Usample NF:" << Usample << std::endl;
     std::cout << "Usample FF:" << UsampleSP << std::endl;
     std::cout << "Usample FF+NF total:" << UsampleSP + Usample << std::endl;
-    std::cout << "Error : " << UsampleSP + Usample - 0.36577859302782289586 << std::endl;
+    std::cout << "Error : "
+              << UsampleSP + Usample -
+                     gKernelPBC(samplePoint, dipolePoint[0]).dot(dipoleValue[0])
+              << std::endl;
 
     return 0;
 }
+    
+} // namespace Laplace1D3DDipole
+
+
+#undef DIRECTLAYER
+#undef PI314
+#undef E271

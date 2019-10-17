@@ -507,7 +507,7 @@ void pinv_pvfmm(T *M, int n1, int n2, T eps, T *M_) {
     //	mem::aligned_delete < T > (tVT);
 }
 
-void pinv(const Eigen::MatrixXd &Mat, Eigen::MatrixXd &MatPinv) {
+inline void pinv(const Eigen::MatrixXd &Mat, Eigen::MatrixXd &MatPinv) {
     double eps = 1;
     while (eps + 1.0 > 1.0) {
         eps *= 0.5;
@@ -535,7 +535,7 @@ void pinv(const Eigen::MatrixXd &Mat, Eigen::MatrixXd &MatPinv) {
     }
 }
 
-void pinv(const Eigen::MatrixXd &Mat, Eigen::MatrixXd &MatPinvU, Eigen::MatrixXd &MatPinvVT) {
+inline void pinv(const Eigen::MatrixXd &Mat, Eigen::MatrixXd &MatPinvU, Eigen::MatrixXd &MatPinvVT) {
     // this is the really backward stable SVD used by pvfmm
 
     double eps = 1;
