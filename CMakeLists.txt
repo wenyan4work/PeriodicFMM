@@ -8,12 +8,15 @@ include_directories(${MPI_INCLUDE_PATH})
 
 find_package(OpenMP REQUIRED)
 
-find_package(Boost)
+find_package(Boost REQUIRED)
 find_package(PythonLibs)
+
+find_package(PVFMM REQUIRED)
 
 include_directories("include"
   ${Boost_INCLUDE_DIRS}
   ${PYTHON_INCLUDE_DIRS}
+  ${PVFMM_INCLUDE_DIR}
   )
 if (DEFINED ENV{CONDA_PREFIX})
   set(CONDA_PREFIX ENV{CONDA_PREFIX})
@@ -40,8 +43,9 @@ set(PeriodicFMM_SOURCES
 
 add_library(PeriodicFMM SHARED ${PeriodicFMM_SOURCES})
 add_library(PeriodicFMM_static STATIC ${PeriodicFMM_SOURCES})
-target_link_libraries(PeriodicFMM ${MPI_LIBRARIES})
-target_link_libraries(PeriodicFMM_static ${MPI_LIBRARIES})
+target_link_libraries(PeriodicFMM ${MPI_LIBRARIES} ${PVFMM_LIBRARIES})
+target_link_libraries(PeriodicFMM_static ${MPI_LIBRARIES} ${PVFMM_LIBRARIES})
+
 
 if (MPI_COMPILE_FLAGS)
   message("Setting MPI compile flags")
@@ -61,6 +65,11 @@ if (OpenMP_CXX_FLAGS)
   set_target_properties(PeriodicFMM PROPERTIES COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
   set_target_properties(PeriodicFMM_static PROPERTIES COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
 endif()
+
+set_target_properties(PeriodicFMM PROPERTIES
+  LINK_FLAGS "${PVFMM_LIBRARIES}")
+set_target_properties(PeriodicFMM_static PROPERTIES
+  LINK_FLAGS "${PVFMM_LIBRARIES}")
 
 set_target_properties(PeriodicFMM PROPERTIES PUBLIC_HEADER "\
 include/FMM/EigenDef.hpp;\
