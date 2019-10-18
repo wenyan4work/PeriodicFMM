@@ -25,8 +25,8 @@ class FMM_Wrapper {
     // kernel function reference
     const pvfmm::Kernel<double> &kernelG;
 
-    FMM_Wrapper(int mult_order = 10, int max_pts = 2000, int init_depth = 0, PAXIS pbc_ = PAXIS::NONE,
-                bool reg = false);
+    FMM_Wrapper(int mult_order = 10, int max_pts = 2000, int init_depth = 0,
+                PAXIS pbc_ = PAXIS::NONE, bool reg = false);
 
     ~FMM_Wrapper();
 
@@ -34,9 +34,11 @@ class FMM_Wrapper {
 
     void FMM_DataClear();
 
-    void FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val);
+    void FMM_Evaluate(std::vector<double> &trg_val, const int n_trg,
+                      std::vector<double> *src_val);
 
-    void FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord);
+    void FMM_UpdateTree(const std::vector<double> &src_coord,
+                        const std::vector<double> &trg_coord);
 
     void FMM_SetBox(double, double, double, double, double, double);
 
@@ -70,8 +72,9 @@ class FMM_Wrapper {
 
     int pEquiv;
     int equivN;
-    double scaleLEquiv;            // = 1.05;
-    double pCenterLEquiv[3];       // = { -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2 };
+    double scaleLEquiv;      // = 1.05;
+    double pCenterLEquiv[3]; // = { -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) /
+                             // 2, -(scaleLEquiv - 1) / 2 };
     std::vector<double> M2Lsource; // the equivalent sources after the operation
     std::vector<double> pointLEquiv;
     // = surface(pEquiv, (double *) &(pCenterLCheck[0]), scaleLCheck, 0);

@@ -1,12 +1,12 @@
 include ../../MakefileInc.mk
 
-INCLUDE_DIRS = $(USERINCLUDE) -I../../
+INCLUDE_DIRS = $(USERINCLUDE) -I../../include -I$(CONDA_PREFIX)/include
 LIBRARY_DIRS = 
 LIBRARIES = $(USERLIB)
 # Files
 
-SRC =   main.cpp ChebNodal.cpp regularized_stokeslet.cpp ../../FMM/FMMWrapper.cpp
-INC =   ChebNodal.h Ewald.hpp regularized_stokeslet.hpp ../../FMM/FMMWrapper.h
+SRC =   main.cpp ChebNodal.cpp regularized_stokeslet.cpp ../../include/FMM/FMMWrapper.cpp
+INC =   ChebNodal.h Ewald.hpp regularized_stokeslet.hpp ../../include/FMM/FMMWrapper.hpp
 
 # Definitions
 CXXFLAGS += -DFMMTIMING -Wall -Wno-sign-compare -Wno-unused

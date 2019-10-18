@@ -21,7 +21,8 @@ class FMM_WrapperWall2D {
 
     const PAXIS pbc;
 
-    FMM_WrapperWall2D(int mult_order = 10, int max_pts = 2000, int init_depth = 0, PAXIS pbc_ = PAXIS::NONE);
+    FMM_WrapperWall2D(int mult_order = 10, int max_pts = 2000,
+                      int init_depth = 0, PAXIS pbc_ = PAXIS::NONE);
 
     ~FMM_WrapperWall2D();
 
@@ -29,9 +30,11 @@ class FMM_WrapperWall2D {
 
     void FMM_DataClear();
 
-    void FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val);
+    void FMM_Evaluate(std::vector<double> &trg_val, const int n_trg,
+                      std::vector<double> *src_val);
 
-    void FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord);
+    void FMM_UpdateTree(const std::vector<double> &src_coord,
+                        const std::vector<double> &trg_coord);
 
     void FMM_SetBox(double, double, double, double, double, double);
 
@@ -80,7 +83,7 @@ class FMM_WrapperWall2D {
 
     std::vector<double> srcValueLapDipoleSL; // dipole value and gradient
     std::vector<double> srcValueLapDipoleDL; // dipole value and gradient
-    std::vector<double> trgValueLapDipole; // dipole value and gradient
+    std::vector<double> trgValueLapDipole;   // dipole value and gradient
 
     std::vector<double> srcCoordScaled;
     std::vector<double> srcImageCoordScaled;
@@ -88,15 +91,17 @@ class FMM_WrapperWall2D {
 
     int pEquiv;
     int equivN;
-    double scaleLEquiv;            // = 1.05;
-    double pCenterLEquiv[3];       // = { -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2 };
+    double scaleLEquiv;      // = 1.05;
+    double pCenterLEquiv[3]; // = { -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) /
+                             // 2, -(scaleLEquiv - 1) / 2 };
     std::vector<double> M2Lsource; // the equivalent sources after the operation
 
     std::vector<double> pointLEquiv;
     // = surface(pEquiv, (double *) &(pCenterLCheck[0]), scaleLCheck, 0);
     // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
-    void scalePoints(const std::vector<double> &srcCoord, const std::vector<double> &trgCoord);
+    void scalePoints(const std::vector<double> &srcCoord,
+                     const std::vector<double> &trgCoord);
 
     void treeSetupStokes(); // SL only
     void treeSetupDipole(); // SL+DL

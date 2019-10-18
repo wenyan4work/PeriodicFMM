@@ -74,9 +74,11 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     return coord;
 }
 
-FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth, PAXIS pbc_)
-    : mult_order(mult_order), max_pts(max_pts), init_depth(init_depth), pbc(pbc_), xlow(0), xhigh(1), ylow(0), yhigh(1),
-      zlow(0), zhigh(1), scaleFactor(1), xshift(0), yshift(0), zshift(0)
+FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts,
+                                     int init_depth, PAXIS pbc_)
+    : mult_order(mult_order), max_pts(max_pts), init_depth(init_depth),
+      pbc(pbc_), xlow(0), xhigh(1), ylow(0), yhigh(1), zlow(0), zhigh(1),
+      scaleFactor(1), xshift(0), yshift(0), zshift(0)
 #ifndef FMMTIMING
       ,
       myTimer(false)
@@ -99,7 +101,8 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
     pm2lLapCharge = nullptr;
 
     if (pbc != NONE) {
-        if (mult_order != (mult_order / 2) * 2 || mult_order < 6 || mult_order > 16) {
+        if (mult_order != (mult_order / 2) * 2 || mult_order < 6 ||
+            mult_order > 16) {
             printf("periodic M2L data available only for p=6,8,10,12,14,16\n");
             exit(1);
         } else if (pbc == PAXIS::PX) {
@@ -173,7 +176,8 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
         this->pCenterLEquiv[1] = -(scaleLEquiv - 1) / 2;
         this->pCenterLEquiv[2] = -(scaleLEquiv - 1) / 2;
 
-        pointLEquiv = surface(pEquiv, (double *)&(pCenterLEquiv[0]), scaleLEquiv, 0);
+        pointLEquiv =
+            surface(pEquiv, (double *)&(pCenterLEquiv[0]), scaleLEquiv, 0);
         // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
         equivN = 6 * (pEquiv - 1) * (pEquiv - 1) + 2;
@@ -181,13 +185,16 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
 
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    const pvfmm::Kernel<double> &kernelStokes = pvfmm::StokesKernel<double>::velocity();
+    const pvfmm::Kernel<double> &kernelStokes =
+        pvfmm::StokesKernel<double>::velocity();
     matrixStokes.Initialize(mult_order, comm, &kernelStokes);
 
-    const pvfmm::Kernel<double> &kernelLapCharge = pvfmm::LaplaceLayerKernel<double>::PGrad();
+    const pvfmm::Kernel<double> &kernelLapCharge =
+        pvfmm::LaplaceLayerKernel<double>::PGrad();
     matrixLapCharge.Initialize(mult_order, comm, &kernelLapCharge);
 
-    const pvfmm::Kernel<double> &kernelLapDipole = pvfmm::LaplaceLayerKernel<double>::PGrad();
+    const pvfmm::Kernel<double> &kernelLapDipole =
+        pvfmm::LaplaceLayerKernel<double>::PGrad();
     matrixLapDipole.Initialize(mult_order, comm, &kernelLapDipole);
 
     treePtrStokes = nullptr;
@@ -204,8 +211,8 @@ FMM_WrapperWall2D::FMM_WrapperWall2D(int mult_order, int max_pts, int init_depth
         printf("StokesWall2D FMM Initialized\n");
 }
 
-void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, double yhigh_, double zlow_,
-                                   double zhigh_) {
+void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_,
+                                   double yhigh_, double zlow_, double zhigh_) {
     xlow = xlow_;
     xhigh = xhigh_;
     ylow = ylow_;
@@ -217,7 +224,8 @@ void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, do
     const double ylen = yhigh - ylow;
     const double zlen = zhigh - zlow;
 
-    // Wall plane at z=0.5, fit everything into the box x=[0,1), y=[0,1), z=[0.5,1)
+    // Wall plane at z=0.5, fit everything into the box x=[0,1), y=[0,1),
+    // z=[0.5,1)
 
     // step 1, validity check
     if (this->pbc == PAXIS::NONE) {
@@ -227,7 +235,8 @@ void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, do
         }
     } else if (this->pbc == PAXIS::PX) {
         if (yhigh - ylow > xhigh - xlow) {
-            printf("periodic in x direction. box size in y must be smaller than box size in x");
+            printf("periodic in x direction. box size in y must be smaller "
+                   "than box size in x");
             exit(1);
         }
         if (zlen >= 0.5 * xlen || zlen >= 0.5 * ylen) {
@@ -236,7 +245,8 @@ void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, do
         }
     } else if (this->pbc == PAXIS::PXY) {
         if (xhigh - xlow != yhigh - ylow) {
-            printf("x and y length must be identical for doubly periodic systems\n");
+            printf("x and y length must be identical for doubly periodic "
+                   "systems\n");
             exit(1);
         }
         if (zlen >= 0.5 * xlen || zlen >= 0.5 * ylen) {
@@ -247,7 +257,9 @@ void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, do
 
     // step 2, setting xyz shift and scale factor
     // find and calculate scale & shift factor to map the box to [0,1)
-    scaleFactor = 1 / std::max(xlen, ylen); // new coordinate = (x+xshift)*scaleFactor, in (0,1)
+    scaleFactor =
+        1 / std::max(xlen,
+                     ylen); // new coordinate = (x+xshift)*scaleFactor, in (0,1)
 
     xshift = -xlow;
     yshift = -ylow;
@@ -262,22 +274,26 @@ void FMM_WrapperWall2D::FMM_SetBox(double xlow_, double xhigh_, double ylow_, do
     }
 }
 
-void FMM_WrapperWall2D::treePointDump(const pvfmm::PtFMM_Data<double> &treeData) {
+void FMM_WrapperWall2D::treePointDump(
+    const pvfmm::PtFMM_Data<double> &treeData) {
     const int nsrc = treeData.src_coord.Dim() / 3;
     const int ntrg = treeData.trg_coord.Dim() / 3;
 
     printf("tree src\n");
     for (int i = 0; i < nsrc; i++) {
-        printf("%f,%f,%f\n", treeData.src_coord[3 * i], treeData.src_coord[3 * i + 1], treeData.src_coord[3 * i + 2]);
+        printf("%f,%f,%f\n", treeData.src_coord[3 * i],
+               treeData.src_coord[3 * i + 1], treeData.src_coord[3 * i + 2]);
     }
 
     printf("tree trg\n");
     for (int i = 0; i < ntrg; i++) {
-        printf("%f,%f,%f\n", treeData.trg_coord[3 * i], treeData.trg_coord[3 * i + 1], treeData.trg_coord[3 * i + 2]);
+        printf("%f,%f,%f\n", treeData.trg_coord[3 * i],
+               treeData.trg_coord[3 * i + 1], treeData.trg_coord[3 * i + 2]);
     }
 }
 
-void FMM_WrapperWall2D::FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord) {
+void FMM_WrapperWall2D::FMM_UpdateTree(const std::vector<double> &src_coord,
+                                       const std::vector<double> &trg_coord) {
     int myRank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     if (myRank == 0)
@@ -304,7 +320,9 @@ void FMM_WrapperWall2D::FMM_UpdateTree(const std::vector<double> &src_coord, con
     // printf("SetupFMM Complete\n");
 }
 
-void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val) {
+void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val,
+                                     const int n_trg,
+                                     std::vector<double> *src_val) {
     if (n_trg != trg_val.size() / 3) {
         printf("n_trg error \n");
         exit(1);
@@ -335,7 +353,8 @@ void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val, const int n_t
 #endif
 }
 
-double *FMM_WrapperWall2D::readM2LMat(const char *fname, const int p, int kDim) {
+double *FMM_WrapperWall2D::readM2LMat(const char *fname, const int p,
+                                      int kDim) {
     const int size = kDim * (6 * (p - 1) * (p - 1) + 2);
     double *fdata = new double[size * size];
 
@@ -369,7 +388,10 @@ void FMM_WrapperWall2D::calcMStokes() {
     // add periodization for stokes G
 
     // make a copy to do correction
-    pvfmm::Vector<double> v = treePtrStokes->RootNode()->FMMData()->upward_equiv; // the value calculated by pvfmm
+    pvfmm::Vector<double> v =
+        treePtrStokes->RootNode()
+            ->FMMData()
+            ->upward_equiv; // the value calculated by pvfmm
     auto &trgCoord = treeDataStokes.trg_coord;
 
     assert(v.Dim() == 3 * this->equivN);
@@ -394,17 +416,22 @@ void FMM_WrapperWall2D::calcMStokes() {
         M2Lsource[i] = temp;
     }
 
-    const pvfmm::Kernel<double> &kernelG = pvfmm::StokesKernel<double>::velocity();
+    const pvfmm::Kernel<double> &kernelG =
+        pvfmm::StokesKernel<double>::velocity();
     const size_t chunkSize = 2000; // each chunk has 2000 target points.
     const size_t chunkNumber = floor(n_trg / chunkSize) + 1;
     // printf("chunkSize, chunkNumber: %zu, %zu\n", chunkSize, chunkNumber);
 #pragma omp parallel for schedule(static, 1)
     for (size_t i = 0; i < chunkNumber; i++) {
         const size_t idTrgLow = i * chunkSize;
-        const size_t idTrgHigh = (i + 1 < chunkNumber) ? idTrgLow + chunkSize : n_trg; // not inclusive
-        //        printf("i, idTrgLow, idTrgHigh: %d, %d, %d\n", i, idTrgLow, idTrgHigh);
-        kernelG.k_l2t->ker_poten(pointLEquiv.data(), equivN, M2Lsource.data(), 1, &(trgCoord[3 * idTrgLow]),
-                                 idTrgHigh - idTrgLow, &(trgValueStokes[3 * idTrgLow]), NULL);
+        const size_t idTrgHigh = (i + 1 < chunkNumber) ? idTrgLow + chunkSize
+                                                       : n_trg; // not inclusive
+        //        printf("i, idTrgLow, idTrgHigh: %d, %d, %d\n", i, idTrgLow,
+        //        idTrgHigh);
+        kernelG.k_l2t->ker_poten(pointLEquiv.data(), equivN, M2Lsource.data(),
+                                 1, &(trgCoord[3 * idTrgLow]),
+                                 idTrgHigh - idTrgLow,
+                                 &(trgValueStokes[3 * idTrgLow]), NULL);
     }
 }
 
@@ -416,11 +443,15 @@ void FMM_WrapperWall2D::calcMLapCharge(int treeSelect) {
 
     // no copy
     if (treeSelect == 0) {
-        vPtr = &(treePtrLapCharge->RootNode()->FMMData()->upward_equiv); // the value calculated by pvfmm
+        vPtr = &(treePtrLapCharge->RootNode()
+                     ->FMMData()
+                     ->upward_equiv); // the value calculated by pvfmm
         trgCoordPtr = &(treeDataLapCharge.trg_coord);
         trgValuePtr = &trgValueLapCharge;
     } else if (treeSelect == 1) {
-        vPtr = &(treePtrLapDipole->RootNode()->FMMData()->upward_equiv); // the value calculated by pvfmm
+        vPtr = &(treePtrLapDipole->RootNode()
+                     ->FMMData()
+                     ->upward_equiv); // the value calculated by pvfmm
         trgCoordPtr = &(treeDataLapDipole.trg_coord);
         trgValuePtr = &trgValueLapDipole;
     }
@@ -454,17 +485,22 @@ void FMM_WrapperWall2D::calcMLapCharge(int treeSelect) {
         exit(1);
     }
 
-    const pvfmm::Kernel<double> &kernelLap = pvfmm::LaplaceLayerKernel<double>::PGrad();
+    const pvfmm::Kernel<double> &kernelLap =
+        pvfmm::LaplaceLayerKernel<double>::PGrad();
     const size_t chunkSize = 2000; // each chunk has 2000 target points.
     const size_t chunkNumber = floor(nTrg / chunkSize) + 1;
     // printf("chunkSize, chunkNumber: %zu, %zu\n", chunkSize, chunkNumber);
 #pragma omp parallel for schedule(static, 1)
     for (size_t i = 0; i < chunkNumber; i++) {
         const size_t idTrgLow = i * chunkSize;
-        const size_t idTrgHigh = (i + 1 < chunkNumber) ? idTrgLow + chunkSize : nTrg; // not inclusive
-        //        printf("i, idTrgLow, idTrgHigh: %d, %d, %d\n", i, idTrgLow, idTrgHigh);
-        kernelLap.k_l2t->ker_poten(pointLEquiv.data(), equivN, M2Lsource.data(), 1, &(trgCoord[3 * idTrgLow]),
-                                   idTrgHigh - idTrgLow, &(trgValue[4 * idTrgLow]), NULL);
+        const size_t idTrgHigh = (i + 1 < chunkNumber) ? idTrgLow + chunkSize
+                                                       : nTrg; // not inclusive
+        //        printf("i, idTrgLow, idTrgHigh: %d, %d, %d\n", i, idTrgLow,
+        //        idTrgHigh);
+        kernelLap.k_l2t->ker_poten(pointLEquiv.data(), equivN, M2Lsource.data(),
+                                   1, &(trgCoord[3 * idTrgLow]),
+                                   idTrgHigh - idTrgLow,
+                                   &(trgValue[4 * idTrgLow]), NULL);
     }
 
     return;
@@ -518,12 +554,14 @@ void FMM_WrapperWall2D::treeStokes() {
     treeDataStokes.max_depth = 15;
     treeDataStokes.max_pts = max_pts;
     treeSetupStokes();
-    treeDataStokes.pt_coord = treeDataStokes.src_coord.Dim() > treeDataStokes.trg_coord.Dim()
-                                  ? treeDataStokes.src_coord
-                                  : treeDataStokes.trg_coord; // use src_coord to construct FMM tree
+    treeDataStokes.pt_coord =
+        treeDataStokes.src_coord.Dim() > treeDataStokes.trg_coord.Dim()
+            ? treeDataStokes.src_coord
+            : treeDataStokes.trg_coord; // use src_coord to construct FMM tree
     treePtrStokes->Initialize(&treeDataStokes);
     bool adap = true;
-    treePtrStokes->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace : pvfmm::Periodic);
+    treePtrStokes->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace
+                                                  : pvfmm::Periodic);
     treePtrStokes->SetupFMM(&matrixStokes);
 }
 
@@ -534,10 +572,12 @@ void FMM_WrapperWall2D::treeLapDipole() {
     treeDataLapDipole.max_depth = 15;
     treeDataLapDipole.max_pts = max_pts;
     treeSetupDipole();
-    treeDataLapDipole.pt_coord = treeDataStokes.pt_coord; // use src_coord to construct FMM tree
+    treeDataLapDipole.pt_coord =
+        treeDataStokes.pt_coord; // use src_coord to construct FMM tree
     treePtrLapDipole->Initialize(&treeDataLapDipole);
     bool adap = true;
-    treePtrLapDipole->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace : pvfmm::Periodic);
+    treePtrLapDipole->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace
+                                                     : pvfmm::Periodic);
     treePtrLapDipole->SetupFMM(&matrixLapDipole);
 }
 
@@ -547,14 +587,17 @@ void FMM_WrapperWall2D::treeLapCharge() {
     treeDataLapCharge.max_depth = 15;
     treeDataLapCharge.max_pts = max_pts;
     treeSetupCharge();
-    treeDataLapCharge.pt_coord = treeDataStokes.pt_coord; // use src_coord to construct FMM tree
+    treeDataLapCharge.pt_coord =
+        treeDataStokes.pt_coord; // use src_coord to construct FMM tree
     treePtrLapCharge->Initialize(&treeDataLapCharge);
     bool adap = true;
-    treePtrLapCharge->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace : pvfmm::Periodic);
+    treePtrLapCharge->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace
+                                                     : pvfmm::Periodic);
     treePtrLapCharge->SetupFMM(&matrixLapCharge);
 }
 
-void FMM_WrapperWall2D::evalStokes(const int ntrg, std::vector<double> *src_val) {
+void FMM_WrapperWall2D::evalStokes(const int ntrg,
+                                   std::vector<double> *src_val) {
     const int nsrc = src_val->size() / 3;
     // evaluate 1, Stokes FMM
     srcValueStokes.resize(3 * nsrc * 2);
@@ -583,7 +626,8 @@ void FMM_WrapperWall2D::evalStokes(const int ntrg, std::vector<double> *src_val)
     myTimer.stop("Stokes Far Field");
 }
 
-void FMM_WrapperWall2D::evalLapDipole(const int ntrg, std::vector<double> *src_val) {
+void FMM_WrapperWall2D::evalLapDipole(const int ntrg,
+                                      std::vector<double> *src_val) {
     const int nsrc = src_val->size() / 3;
     // evaluate 2, LaplaceDipole FMM
     // SL: src + image
@@ -613,7 +657,8 @@ void FMM_WrapperWall2D::evalLapDipole(const int ntrg, std::vector<double> *src_v
     }
 
     trgValueLapDipole.resize(ntrg * 4); // PGrad Kernel
-    PtFMM_Evaluate(treePtrLapDipole, trgValueLapDipole, ntrg, &srcValueLapDipoleSL, &srcValueLapDipoleDL);
+    PtFMM_Evaluate(treePtrLapDipole, trgValueLapDipole, ntrg,
+                   &srcValueLapDipoleSL, &srcValueLapDipoleDL);
     myTimer.stop("Lap Dipole Near Field");
     myTimer.start();
     if (pbc != NONE) {
@@ -622,7 +667,8 @@ void FMM_WrapperWall2D::evalLapDipole(const int ntrg, std::vector<double> *src_v
     myTimer.stop("Lap Dipole Far Field");
 }
 
-void FMM_WrapperWall2D::evalLapCharge(const int ntrg, std::vector<double> *src_val) {
+void FMM_WrapperWall2D::evalLapCharge(const int ntrg,
+                                      std::vector<double> *src_val) {
     const int nsrc = src_val->size() / 3;
     // evaluate 3, LaplaceCharge FMM
     srcValueLapCharge.resize(nsrc * 2);
@@ -641,7 +687,8 @@ void FMM_WrapperWall2D::evalLapCharge(const int ntrg, std::vector<double> *src_v
     }
 
     trgValueLapCharge.resize(ntrg * 4); // value + gradient
-    PtFMM_Evaluate(treePtrLapCharge, trgValueLapCharge, ntrg, &srcValueLapCharge);
+    PtFMM_Evaluate(treePtrLapCharge, trgValueLapCharge, ntrg,
+                   &srcValueLapCharge);
     myTimer.stop("Lap Charge F Near Field");
     myTimer.start();
     if (pbc != NONE) {
@@ -683,7 +730,8 @@ void FMM_WrapperWall2D::FMM_TreeClear() {
 
     if (treePtrStokes != nullptr) {
         delete treePtrStokes;
-        treePtrStokes = nullptr; // after delete the pointer is not equal to nullptr
+        treePtrStokes =
+            nullptr; // after delete the pointer is not equal to nullptr
     }
     if (treePtrLapCharge != nullptr) {
         delete treePtrLapCharge;
@@ -707,7 +755,8 @@ FMM_WrapperWall2D::~FMM_WrapperWall2D() {
     }
 }
 
-void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord, const std::vector<double> &trgCoord) {
+void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord,
+                                    const std::vector<double> &trgCoord) {
     // filled srcCoordScaled, srcImageCoordScaled, trgCoordScaled
 
     // srcCoordScaled:
@@ -723,43 +772,65 @@ void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord, const s
     const double scaleFactor = this->scaleFactor;
 
     if (pbc == PAXIS::PX) {
-#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(srcCoordScaled, srcCoord)
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor)     \
+    shared(srcCoordScaled, srcCoord)
         for (size_t i = 0; i < nsrc; i++) {
-            srcCoordScaled[3 * i] = fracwrap((srcCoord[3 * i] + xshift) * scaleFactor);
-            srcCoordScaled[3 * i + 1] = ((srcCoord[3 * i + 1] + yshift) * scaleFactor);
-            srcCoordScaled[3 * i + 2] = ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
+            srcCoordScaled[3 * i] =
+                fracwrap((srcCoord[3 * i] + xshift) * scaleFactor);
+            srcCoordScaled[3 * i + 1] =
+                ((srcCoord[3 * i + 1] + yshift) * scaleFactor);
+            srcCoordScaled[3 * i + 2] =
+                ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
         }
-#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(trgCoordScaled, trgCoord)
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor)     \
+    shared(trgCoordScaled, trgCoord)
         for (size_t i = 0; i < ntrg; i++) {
-            trgCoordScaled[3 * i] = fracwrap((trgCoord[3 * i] + xshift) * scaleFactor);
-            trgCoordScaled[3 * i + 1] = ((trgCoord[3 * i + 1] + yshift) * scaleFactor);
-            trgCoordScaled[3 * i + 2] = ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
+            trgCoordScaled[3 * i] =
+                fracwrap((trgCoord[3 * i] + xshift) * scaleFactor);
+            trgCoordScaled[3 * i + 1] =
+                ((trgCoord[3 * i + 1] + yshift) * scaleFactor);
+            trgCoordScaled[3 * i + 2] =
+                ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else if (pbc == PAXIS::PXY) {
-#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(srcCoordScaled, srcCoord)
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor)     \
+    shared(srcCoordScaled, srcCoord)
         for (size_t i = 0; i < nsrc; i++) {
-            srcCoordScaled[3 * i] = fracwrap((srcCoord[3 * i] + xshift) * scaleFactor);
-            srcCoordScaled[3 * i + 1] = fracwrap((srcCoord[3 * i + 1] + yshift) * scaleFactor);
-            srcCoordScaled[3 * i + 2] = ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
+            srcCoordScaled[3 * i] =
+                fracwrap((srcCoord[3 * i] + xshift) * scaleFactor);
+            srcCoordScaled[3 * i + 1] =
+                fracwrap((srcCoord[3 * i + 1] + yshift) * scaleFactor);
+            srcCoordScaled[3 * i + 2] =
+                ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
         }
-#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(trgCoordScaled, trgCoord)
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor)     \
+    shared(trgCoordScaled, trgCoord)
         for (size_t i = 0; i < ntrg; i++) {
-            trgCoordScaled[3 * i] = fracwrap((trgCoord[3 * i] + xshift) * scaleFactor);
-            trgCoordScaled[3 * i + 1] = fracwrap((trgCoord[3 * i + 1] + yshift) * scaleFactor);
-            trgCoordScaled[3 * i + 2] = ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
+            trgCoordScaled[3 * i] =
+                fracwrap((trgCoord[3 * i] + xshift) * scaleFactor);
+            trgCoordScaled[3 * i + 1] =
+                fracwrap((trgCoord[3 * i + 1] + yshift) * scaleFactor);
+            trgCoordScaled[3 * i + 2] =
+                ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else {
-#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(srcCoordScaled, srcCoord)
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor)     \
+    shared(srcCoordScaled, srcCoord)
         for (size_t i = 0; i < nsrc; i++) {
             srcCoordScaled[3 * i] = ((srcCoord[3 * i] + xshift) * scaleFactor);
-            srcCoordScaled[3 * i + 1] = ((srcCoord[3 * i + 1] + yshift) * scaleFactor);
-            srcCoordScaled[3 * i + 2] = ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
+            srcCoordScaled[3 * i + 1] =
+                ((srcCoord[3 * i + 1] + yshift) * scaleFactor);
+            srcCoordScaled[3 * i + 2] =
+                ((srcCoord[3 * i + 2] + zshift) * scaleFactor);
         }
-#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor) shared(trgCoordScaled, trgCoord)
+#pragma omp parallel for firstprivate(xshift, yshift, zshift, scaleFactor)     \
+    shared(trgCoordScaled, trgCoord)
         for (size_t i = 0; i < ntrg; i++) {
             trgCoordScaled[3 * i] = ((trgCoord[3 * i] + xshift) * scaleFactor);
-            trgCoordScaled[3 * i + 1] = ((trgCoord[3 * i + 1] + yshift) * scaleFactor);
-            trgCoordScaled[3 * i + 2] = ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
+            trgCoordScaled[3 * i + 1] =
+                ((trgCoord[3 * i + 1] + yshift) * scaleFactor);
+            trgCoordScaled[3 * i + 2] =
+                ((trgCoord[3 * i + 2] + zshift) * scaleFactor);
         }
     }
 

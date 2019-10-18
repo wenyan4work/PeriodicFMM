@@ -37,7 +37,8 @@ inline EVec3 gKernelPBC(const EVec3 &target, const EVec3 &source) {
 
     EVec3 gvec = gKernel(target, source);
     for (int i = 1; i < 500000; i++) {
-        gvec += (gKernel(target, source + EVec3(i, 0, 0)) + gKernel(target, source + EVec3(-i, 0, 0)));
+        gvec += (gKernel(target, source + EVec3(i, 0, 0)) +
+                 gKernel(target, source + EVec3(-i, 0, 0)));
     }
     return gvec;
 }
@@ -48,7 +49,8 @@ inline EVec3 gKernelFF(const EVec3 &target, const EVec3 &source) {
     const int N = DIRECTLAYER;
     const double L3 = 1.0;
     for (int t = DIRECTLAYER + 1; t < 500000; t++) {
-        fPBC += gKernel(target, source + EVec3(t * L3, 0, 0)) + gKernel(target, source - EVec3(t * L3, 0, 0));
+        fPBC += gKernel(target, source + EVec3(t * L3, 0, 0)) +
+                gKernel(target, source - EVec3(t * L3, 0, 0));
     }
 
     return fPBC;
@@ -113,23 +115,31 @@ int main(int argc, char **argv) {
     const int pCheck = atoi(argv[1]);
     const double scaleEquiv = 1.05;
     const double scaleCheck = 2.95;
-    const double pCenterEquiv[3] = {-(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2};
-    const double pCenterCheck[3] = {-(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2};
+    const double pCenterEquiv[3] = {
+        -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2, -(scaleEquiv - 1) / 2};
+    const double pCenterCheck[3] = {
+        -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2, -(scaleCheck - 1) / 2};
 
     const double scaleLEquiv = 1.05;
     const double scaleLCheck = 2.95;
-    const double pCenterLEquiv[3] = {-(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2};
-    const double pCenterLCheck[3] = {-(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2};
+    const double pCenterLEquiv[3] = {
+        -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) / 2};
+    const double pCenterLCheck[3] = {
+        -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2, -(scaleLCheck - 1) / 2};
 
-    auto pointMEquiv = surface(pEquiv, (double *)&(pCenterEquiv[0]), scaleEquiv, 0);
+    auto pointMEquiv =
+        surface(pEquiv, (double *)&(pCenterEquiv[0]), scaleEquiv, 0);
     // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
-    auto pointMCheck = surface(pCheck, (double *)&(pCenterCheck[0]), scaleCheck,
-                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth =0
+    auto pointMCheck = surface(
+        pCheck, (double *)&(pCenterCheck[0]), scaleCheck,
+        0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth =0
 
-    auto pointLEquiv = surface(pEquiv, (double *)&(pCenterLCheck[0]), scaleLCheck,
-                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth =  0
-    auto pointLCheck = surface(pCheck, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
-                               0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    auto pointLEquiv = surface(
+        pEquiv, (double *)&(pCenterLCheck[0]), scaleLCheck,
+        0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth =  0
+    auto pointLCheck = surface(
+        pCheck, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
+        0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
     // calculate the operator M2L with least square
     const int equivN = pointMEquiv.size() / 3;
@@ -139,9 +149,12 @@ int main(int argc, char **argv) {
     Eigen::MatrixXd A(3 * checkN, 3 * equivN);
     A.setZero();
     for (int k = 0; k < checkN; k++) {
-        Eigen::Vector3d Cpoint(pointLCheck[3 * k], pointLCheck[3 * k + 1], pointLCheck[3 * k + 2]);
+        Eigen::Vector3d Cpoint(pointLCheck[3 * k], pointLCheck[3 * k + 1],
+                               pointLCheck[3 * k + 2]);
         for (int l = 0; l < equivN; l++) {
-            const Eigen::Vector3d Lpoint(pointLEquiv[3 * l], pointLEquiv[3 * l + 1], pointLEquiv[3 * l + 2]);
+            const Eigen::Vector3d Lpoint(pointLEquiv[3 * l],
+                                         pointLEquiv[3 * l + 1],
+                                         pointLEquiv[3 * l + 2]);
             EVec3 temp = gKernel(Cpoint, Lpoint);
             A(3 * k, 3 * l) = temp[0];
             A(3 * k + 1, 3 * l + 1) = temp[1];
@@ -155,7 +168,8 @@ int main(int argc, char **argv) {
 
 #pragma omp parallel for
     for (int i = 0; i < equivN; i++) {
-        const Eigen::Vector3d Mpoint(pointMEquiv[3 * i], pointMEquiv[3 * i + 1], pointMEquiv[3 * i + 2]);
+        const Eigen::Vector3d Mpoint(pointMEquiv[3 * i], pointMEquiv[3 * i + 1],
+                                     pointMEquiv[3 * i + 2]);
         //		std::cout << "debug:" << Mpoint << std::endl;
 
         // assemble linear system
@@ -166,7 +180,8 @@ int main(int argc, char **argv) {
         f1.setZero();
         f2.setZero();
         for (int k = 0; k < checkN; k++) {
-            Eigen::Vector3d Cpoint(pointLCheck[3 * k], pointLCheck[3 * k + 1], pointLCheck[3 * k + 2]);
+            Eigen::Vector3d Cpoint(pointLCheck[3 * k], pointLCheck[3 * k + 1],
+                                   pointLCheck[3 * k + 2]);
             //			std::cout<<"debug:"<<k<<std::endl;
             // sum the images
             EVec3 temp = gKernelFF(Cpoint, Mpoint);
@@ -176,20 +191,26 @@ int main(int argc, char **argv) {
         }
         // std::cout << "debug:" << f0 << std::endl;
 
-        M2L.block(0, 3 * i, 3 * equivN, 1) = (ApinvU.transpose() * (ApinvVT.transpose() * f0));
-        M2L.block(0, 3 * i + 1, 3 * equivN, 1) = (ApinvU.transpose() * (ApinvVT.transpose() * f1));
-        M2L.block(0, 3 * i + 2, 3 * equivN, 1) = (ApinvU.transpose() * (ApinvVT.transpose() * f2));
+        M2L.block(0, 3 * i, 3 * equivN, 1) =
+            (ApinvU.transpose() * (ApinvVT.transpose() * f0));
+        M2L.block(0, 3 * i + 1, 3 * equivN, 1) =
+            (ApinvU.transpose() * (ApinvVT.transpose() * f1));
+        M2L.block(0, 3 * i + 2, 3 * equivN, 1) =
+            (ApinvU.transpose() * (ApinvVT.transpose() * f2));
     }
 
     // dump M2L
     for (int i = 0; i < 3 * equivN; i++) {
         for (int j = 0; j < 3 * equivN; j++) {
-            std::cout << i << " " << j << " " << std::scientific << std::setprecision(18) << M2L(i, j) << std::endl;
+            std::cout << i << " " << j << " " << std::scientific
+                      << std::setprecision(18) << M2L(i, j) << std::endl;
         }
     }
 
-    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> dipolePoint(1);
-    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> dipoleValue(1);
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+        dipolePoint(1);
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+        dipoleValue(1);
     dipolePoint[0] = Eigen::Vector3d(0.2, 0.3, 0.4);
     dipoleValue[0] = Eigen::Vector3d(0.1, 2, 0.3);
 
@@ -200,7 +221,8 @@ int main(int argc, char **argv) {
     Eigen::VectorXd f(3 * checkN);
     for (int k = 0; k < checkN; k++) {
         EVec3 sum(0, 0, 0);
-        Eigen::Vector3d Cpoint(pointMCheck[3 * k], pointMCheck[3 * k + 1], pointMCheck[3 * k + 2]);
+        Eigen::Vector3d Cpoint(pointMCheck[3 * k], pointMCheck[3 * k + 1],
+                               pointMCheck[3 * k + 2]);
         for (int p = 0; p < dipolePoint.size(); p++) {
             EVec3 temp = gKernel(Cpoint, dipolePoint[p]);
             sum[0] += temp[0] * dipoleValue[p][0];
@@ -211,7 +233,8 @@ int main(int argc, char **argv) {
         f[3 * k + 1] = sum[1];
         f[3 * k + 2] = sum[2];
         for (int l = 0; l < equivN; l++) {
-            Eigen::Vector3d Mpoint(pointMEquiv[3 * l], pointMEquiv[3 * l + 1], pointMEquiv[3 * l + 2]);
+            Eigen::Vector3d Mpoint(pointMEquiv[3 * l], pointMEquiv[3 * l + 1],
+                                   pointMEquiv[3 * l + 2]);
             // A(k, l) = gKernel(Mpoint, Cpoint);
             EVec3 temp = gKernel(Cpoint, Mpoint);
             A(3 * k, 3 * l) = temp[0];
@@ -232,15 +255,17 @@ int main(int argc, char **argv) {
 
     for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
         for (int p = 0; p < dipolePoint.size(); p++) {
-            Usample += gKernel(samplePoint, dipolePoint[p] + EVec3(i, 0, 0)).dot(dipoleValue[p]);
+            Usample += gKernel(samplePoint, dipolePoint[p] + EVec3(i, 0, 0))
+                           .dot(dipoleValue[p]);
         }
     }
 
     for (int p = 0; p < equivN; p++) {
-      Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1],
-                             pointLEquiv[3 * p + 2]);
-      EVec3 M2Lsp(M2Lsource[3 * p], M2Lsource[3 * p + 1], M2Lsource[3 * p + 2]);
-      UsampleSP += gKernel(samplePoint, Lpoint).dot(M2Lsp);
+        Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1],
+                               pointLEquiv[3 * p + 2]);
+        EVec3 M2Lsp(M2Lsource[3 * p], M2Lsource[3 * p + 1],
+                    M2Lsource[3 * p + 2]);
+        UsampleSP += gKernel(samplePoint, Lpoint).dot(M2Lsp);
     }
 
     std::cout << "samplePoint:" << samplePoint << std::endl;
@@ -254,9 +279,8 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-    
-} // namespace Laplace1D3DDipole
 
+} // namespace Laplace1D3DDipole
 
 #undef DIRECTLAYER
 #undef PI314

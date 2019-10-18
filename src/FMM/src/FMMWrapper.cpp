@@ -77,11 +77,14 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
     return coord;
 }
 
-FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_, bool reg)
-    : mult_order(mult_order), max_pts(max_pts), init_depth(init_depth), pbc(pbc_), xlow(0), xhigh(1), ylow(0), yhigh(1),
-      zlow(0), zhigh(1), scaleFactor(1), xshift(0), yshift(0), zshift(0), regularized(reg), SDim(reg ? 7 : 3),
-      TDim(reg ? 6 : 3),
-      kernelG(reg ? pvfmm::StokesRegKernel<double>::FTVelOmega() : pvfmm::StokesKernel<double>::velocity())
+FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth,
+                         PAXIS pbc_, bool reg)
+    : mult_order(mult_order), max_pts(max_pts), init_depth(init_depth),
+      pbc(pbc_), xlow(0), xhigh(1), ylow(0), yhigh(1), zlow(0), zhigh(1),
+      scaleFactor(1), xshift(0), yshift(0), zshift(0), regularized(reg),
+      SDim(reg ? 7 : 3), TDim(reg ? 6 : 3),
+      kernelG(reg ? pvfmm::StokesRegKernel<double>::FTVelOmega()
+                  : pvfmm::StokesKernel<double>::velocity())
 #ifndef FMMTIMING
       ,
       myTimer(false)
@@ -105,7 +108,8 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
     }
     pm2l = nullptr;
     if (pbc != NONE) {
-        if (mult_order != (mult_order / 2) * 2 || mult_order < 6 || mult_order > 16) {
+        if (mult_order != (mult_order / 2) * 2 || mult_order < 6 ||
+            mult_order > 16) {
             printf("periodic M2L data available only for p=6,8,10,12,14,16\n");
         } else if (pbc == PAXIS::PXYZ) {
             switch (mult_order) {
@@ -128,7 +132,8 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
                 pm2l = readM2LMat("M2LStokes3D3Dp16", 16);
                 break;
             default:
-                std::cout << "no m2l data at corresponding p, exit now" << std::endl;
+                std::cout << "no m2l data at corresponding p, exit now"
+                          << std::endl;
                 exit(1);
                 break;
             }
@@ -153,7 +158,8 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
                 pm2l = readM2LMat("M2LStokes1D3Dp16", 16);
                 break;
             default:
-                std::cout << "no m2l data at corresponding p, exit now" << std::endl;
+                std::cout << "no m2l data at corresponding p, exit now"
+                          << std::endl;
                 exit(1);
                 break;
             }
@@ -178,7 +184,8 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
                 pm2l = readM2LMat("M2LStokes2D3Dp16", 16);
                 break;
             default:
-                std::cout << "no m2l data at corresponding p, exit now" << std::endl;
+                std::cout << "no m2l data at corresponding p, exit now"
+                          << std::endl;
                 exit(1);
                 break;
             }
@@ -191,18 +198,22 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
         this->pCenterLEquiv[1] = -(scaleLEquiv - 1) / 2;
         this->pCenterLEquiv[2] = -(scaleLEquiv - 1) / 2;
 
-        pointLEquiv = surface(pEquiv, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
-                              0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+        pointLEquiv =
+            surface(pEquiv, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
+                    0); // center at 0.5,0.5,0.5, periodic box 1,1,1,
+                        // scale 1.05, depth = 0
 
         equivN = 6 * (pEquiv - 1) * (pEquiv - 1) + 2;
     }
     MPI_Comm comm = MPI_COMM_WORLD;
 
     // if (regularized) {
-    //     const pvfmm::Kernel<double> &kernel_fn = pvfmm::StokesRegKernel<double>::Vel();
-    //     matrix.Initialize(mult_order, comm, &kernel_fn);
+    //     const pvfmm::Kernel<double> &kernel_fn =
+    //     pvfmm::StokesRegKernel<double>::Vel(); matrix.Initialize(mult_order,
+    //     comm, &kernel_fn);
     // } else {
-    //     const pvfmm::Kernel<double> &kernel_fn = pvfmm::StokesKernel<double>::velocity();
+    //     const pvfmm::Kernel<double> &kernel_fn =
+    //     pvfmm::StokesKernel<double>::velocity();
     //     matrix.Initialize(mult_order, comm, &kernel_fn);
     // }
     matrix.Initialize(mult_order, comm, &kernelG);
@@ -218,7 +229,8 @@ FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth, PAXIS pbc_
         printf("Stokes3D FMM Initialized\n");
 }
 
-void FMM_Wrapper::FMM_SetBox(double xlow_, double xhigh_, double ylow_, double yhigh_, double zlow_, double zhigh_) {
+void FMM_Wrapper::FMM_SetBox(double xlow_, double xhigh_, double ylow_,
+                             double yhigh_, double zlow_, double zhigh_) {
     xlow = xlow_;
     xhigh = xhigh_;
     ylow = ylow_;
@@ -237,7 +249,8 @@ void FMM_Wrapper::FMM_SetBox(double xlow_, double xhigh_, double ylow_, double y
     int myRank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     if (myRank == 0) {
-        std::cout << "box x" << xlen << "box y" << ylen << "box z" << zlen << std::endl;
+        std::cout << "box x" << xlen << "box y" << ylen << "box z" << zlen
+                  << std::endl;
         std::cout << "scale factor" << scaleFactor << std::endl;
     }
 
@@ -255,7 +268,8 @@ void FMM_Wrapper::FMM_SetBox(double xlow_, double xhigh_, double ylow_, double y
         }
         break;
     case PAXIS::PXY:
-        // for PXY,PXZ,PYZ, periodic direcitons must have equal size, and larger than the third direction
+        // for PXY,PXZ,PYZ, periodic direcitons must have equal size, and larger
+        // than the third direction
         if (fabs(xlen - ylen) < eps && xlen >= zlen) {
         } else {
             std::cout << "periodic box size error" << std::endl;
@@ -264,7 +278,8 @@ void FMM_Wrapper::FMM_SetBox(double xlow_, double xhigh_, double ylow_, double y
         break;
     case PAXIS::PXYZ:
         // for PXYZ, must be cubic
-        if (fabs(xlen - ylen) < eps && fabs(xlen - ylen) < eps && fabs(xlen - zlen) < eps) {
+        if (fabs(xlen - ylen) < eps && fabs(xlen - ylen) < eps &&
+            fabs(xlen - zlen) < eps) {
         } else {
             std::cout << "periodic box size error" << std::endl;
             exit(1);
@@ -281,7 +296,8 @@ void FMM_Wrapper::FMM_SetBox(double xlow_, double xhigh_, double ylow_, double y
     }
 }
 
-void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std::vector<double> &trg_coord) {
+void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord,
+                                 const std::vector<double> &trg_coord) {
 
     myTimer.start();
 
@@ -311,38 +327,50 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
     if (pbc == PAXIS::PX) {
 #pragma omp parallel for
         for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
+            treeData.src_coord[3 * i] =
+                fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
+            treeData.src_coord[3 * i + 1] =
+                ((src_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.src_coord[3 * i + 2] =
+                ((src_coord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else if (pbc == PAXIS::PXY) {
 #pragma omp parallel for
         for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
+            treeData.src_coord[3 * i] =
+                fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
+            treeData.src_coord[3 * i + 1] =
+                fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.src_coord[3 * i + 2] =
+                ((src_coord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else if (pbc == PAXIS::PXYZ) {
 #pragma omp parallel for
         for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i] = fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = fracwrap((src_coord[3 * i + 2] + zshift) * scaleFactor);
+            treeData.src_coord[3 * i] =
+                fracwrap((src_coord[3 * i] + xshift) * scaleFactor);
+            treeData.src_coord[3 * i + 1] =
+                fracwrap((src_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.src_coord[3 * i + 2] =
+                fracwrap((src_coord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else {
 #pragma omp parallel for
         for (size_t i = 0; i < nsrc; i++) {
-            treeData.src_coord[3 * i] = ((src_coord[3 * i] + xshift) * scaleFactor);
-            treeData.src_coord[3 * i + 1] = ((src_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.src_coord[3 * i + 2] = ((src_coord[3 * i + 2] + zshift) * scaleFactor);
+            treeData.src_coord[3 * i] =
+                ((src_coord[3 * i] + xshift) * scaleFactor);
+            treeData.src_coord[3 * i + 1] =
+                ((src_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.src_coord[3 * i + 2] =
+                ((src_coord[3 * i + 2] + zshift) * scaleFactor);
         }
     }
 
 #ifdef FMMDEBUG
     std::cout << "treeData.src_coord" << std::endl;
     for (size_t i = 0; i < nsrc; i++) {
-        std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1] << treeData.src_coord[3 * i + 2]
-                  << std::endl;
+        std::cout << treeData.src_coord[3 * i] << treeData.src_coord[3 * i + 1]
+                  << treeData.src_coord[3 * i + 2] << std::endl;
     }
 #endif
 
@@ -357,45 +385,58 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
     if (pbc == PAXIS::PX) {
 #pragma omp parallel for
         for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
+            treeData.trg_coord[3 * i] =
+                fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 1] =
+                ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 2] =
+                ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else if (pbc == PAXIS::PXY) {
 #pragma omp parallel for
         for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
+            treeData.trg_coord[3 * i] =
+                fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 1] =
+                fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 2] =
+                ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else if (pbc == PAXIS::PXYZ) {
 #pragma omp parallel for
         for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i] = fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = fracwrap((trg_coord[3 * i + 2] + zshift) * scaleFactor);
+            treeData.trg_coord[3 * i] =
+                fracwrap((trg_coord[3 * i] + xshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 1] =
+                fracwrap((trg_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 2] =
+                fracwrap((trg_coord[3 * i + 2] + zshift) * scaleFactor);
         }
     } else {
 #pragma omp parallel for
         for (size_t i = 0; i < ntrg; i++) {
-            treeData.trg_coord[3 * i] = ((trg_coord[3 * i] + xshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 1] = ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
-            treeData.trg_coord[3 * i + 2] = ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
+            treeData.trg_coord[3 * i] =
+                ((trg_coord[3 * i] + xshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 1] =
+                ((trg_coord[3 * i + 1] + yshift) * scaleFactor);
+            treeData.trg_coord[3 * i + 2] =
+                ((trg_coord[3 * i + 2] + zshift) * scaleFactor);
         }
     }
 
 #ifdef FMMDEBUG
     std::cout << "treeData.trg_coord" << std::endl;
     for (size_t i = 0; i < ntrg; i++) {
-        std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1] << treeData.trg_coord[3 * i + 2]
-                  << std::endl;
+        std::cout << treeData.trg_coord[3 * i] << treeData.trg_coord[3 * i + 1]
+                  << treeData.trg_coord[3 * i + 2] << std::endl;
     }
 #endif
 
     // prevent PVFMM from breaking down with coord>=1
     const int NS = treeData.src_coord.Dim();
     const int NT = treeData.trg_coord.Dim();
-    const double eps = std::numeric_limits<double>::epsilon() * 10 * std::max(scaleFactor, 1 / scaleFactor);
+    const double eps = std::numeric_limits<double>::epsilon() * 10 *
+                       std::max(scaleFactor, 1 / scaleFactor);
 #pragma omp parallel for
     for (int i = 0; i < NS; i++) {
         if (treeData.src_coord[i] > 1 - eps)
@@ -413,7 +454,8 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
     treePtr->Initialize(&treeData);
     bool adap = true;
 
-    treePtr->InitFMM_Tree(adap, pbc == NONE ? pvfmm::FreeSpace : pvfmm::Periodic);
+    treePtr->InitFMM_Tree(adap,
+                          pbc == NONE ? pvfmm::FreeSpace : pvfmm::Periodic);
     treePtr->SetupFMM(&matrix);
     myTimer.stop("Stokes3D FMM tree setup");
 
@@ -422,7 +464,8 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord, const std
 #endif
 }
 
-void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, std::vector<double> *src_val_ptr) {
+void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg,
+                               std::vector<double> *src_val_ptr) {
     FMM_DataClear();
 
     // sanity check
@@ -471,14 +514,16 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg, st
             trg_val[TDim * i + j] = trgValueScaled[TDim * i + j] * scaleFactor;
         }
         for (int j = 3; j < TDim; j++) {
-            trg_val[TDim * i + j] = trgValueScaled[TDim * i + j] * scaleFactor * scaleFactor;
+            trg_val[TDim * i + j] =
+                trgValueScaled[TDim * i + j] * scaleFactor * scaleFactor;
         }
     }
     // if (regularized) {
     //     // extra scaling for angular velocity
     //     for (size_t i = 0; i < n_trg; i++) {
     //         for (int j = 3; j < TDim; j++) {
-    //             trg_val[TDim * i + j] = trgValueScaled[TDim * i + j] * scaleFactor;
+    //             trg_val[TDim * i + j] = trgValueScaled[TDim * i + j] *
+    //             scaleFactor;
     //         }
     //     }
     // }
@@ -543,7 +588,8 @@ void FMM_Wrapper::calcMStokes(std::vector<double> &trgValue) {
     }
 
     // const pvfmm::Kernel<double> &kernelG =
-    // regularized ? pvfmm::StokesRegKernel<double>::Vel() : pvfmm::StokesKernel<double>::velocity();
+    // regularized ? pvfmm::StokesRegKernel<double>::Vel() :
+    // pvfmm::StokesKernel<double>::velocity();
 
     const size_t chunkSize = 2000; // each chunk has 2000 target points.
     const size_t chunkNumber = floor(n_trg / chunkSize) + 1;
@@ -551,11 +597,15 @@ void FMM_Wrapper::calcMStokes(std::vector<double> &trgValue) {
 #pragma omp parallel for schedule(static, 1)
     for (size_t i = 0; i < chunkNumber; i++) {
         const size_t idTrgLow = i * chunkSize;
-        const size_t idTrgHigh = (i + 1 < chunkNumber) ? idTrgLow + chunkSize : n_trg; // not inclusive
-        //        printf("i, idTrgLow, idTrgHigh: %d, %d, %d\n", i, idTrgLow, idTrgHigh);
+        const size_t idTrgHigh = (i + 1 < chunkNumber) ? idTrgLow + chunkSize
+                                                       : n_trg; // not inclusive
+        //        printf("i, idTrgLow, idTrgHigh: %d, %d, %d\n", i, idTrgLow,
+        //        idTrgHigh);
 
-        kernelG.k_l2t->ker_poten(pointLEquiv.data(), equivN, M2Lsource.data(), 1, &(trgCoord[3 * idTrgLow]),
-                                 idTrgHigh - idTrgLow, &(trgValue[TDim * idTrgLow]), NULL);
+        kernelG.k_l2t->ker_poten(pointLEquiv.data(), equivN, M2Lsource.data(),
+                                 1, &(trgCoord[3 * idTrgLow]),
+                                 idTrgHigh - idTrgLow,
+                                 &(trgValue[TDim * idTrgLow]), NULL);
     }
 }
 

@@ -4,7 +4,8 @@
  *  Created on: Nov 17, 2017
  *      Author: wyan
  *
- *      Reference: https://gist.github.com/jtilly/a423be999929d70406489a4103e67453
+ *      Reference:
+ * https://gist.github.com/jtilly/a423be999929d70406489a4103e67453
  */
 
 #ifndef TIMER_HPP_
@@ -53,13 +54,19 @@ class Timer {
         if (work) {
             this->stopTime = std::chrono::high_resolution_clock::now();
             logfile << s.c_str() << " Time elapsed = "
-                    << std::chrono::duration_cast<std::chrono::microseconds>(stopTime - startTime).count() / 1e6
+                    << std::chrono::duration_cast<std::chrono::microseconds>(
+                           stopTime - startTime)
+                               .count() /
+                           1e6
                     << std::endl;
         }
     }
 
     double getTime() {
-        return std::chrono::duration_cast<std::chrono::microseconds>(stopTime - startTime).count() / 1e6;
+        return std::chrono::duration_cast<std::chrono::microseconds>(stopTime -
+                                                                     startTime)
+                   .count() /
+               1e6;
     }
 
     void dump() {
