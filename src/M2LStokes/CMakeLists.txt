@@ -5,11 +5,11 @@ add_executable(M2LStokes
   src/Stokes2D3D.cpp
   src/Stokes3D3D.cpp)
 
+
 target_link_libraries(M2LStokes
   ${PVFMM_LIBRARIES}
   PeriodicFMM
-  fftw3
-  lapack
+  mkl_rt
   Eigen3::Eigen
   OpenMP::OpenMP_CXX
   MPI::MPI_CXX)
