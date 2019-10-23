@@ -17,7 +17,7 @@
 #   RUNTIME DESTINATION bin
 #   )
 
-target_compile_options(FMMPeriodic_C PUBLIC "-DPVFMM_FFTW3_MKL")
+# target_compile_options(FMMPeriodic_C PUBLIC "-DPVFMM_FFTW3_MKL")
 
 add_executable(StokesFMM3D
   StokesFMM3D/main.cpp
