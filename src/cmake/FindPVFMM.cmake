@@ -14,30 +14,32 @@
 find_path(PVFMM_INCLUDE_DIR
   NAMES pvfmm.hpp
   PATHS
-    $ENV{CONDA_PREFIX}/include
-    ENV CPATH
-    ENV C_INCLUDE_PATH
-    ENV CPLUS_INCLUDE_PATH
-    ENV OBJC_INCLUDE_PATH
-    ENV OBJCPLUS_INCLUDE_PATH
-    /usr/include
-    /usr/local/include
-    /opt/local/include
-    /sw/include
+    $ENV{HOME}/local/include/pvfmm
+    $ENV{CONDA_PREFIX}/include/pvfmm
+    $ENV{CPATH}/pvfmm
+    $ENV{C_INCLUDE_PATH}/pvfmm
+    $ENV{CPLUS_INCLUDE_PATH}/pvfmm
+    $ENV{OBJC_INCLUDE_PATH}/pvfmm
+    $ENV{OBJCPLUS_INCLUDE_PATH}/pvfmm
+    /usr/include/pvfmm
+    /usr/local/include/pvfmm
+    /opt/local/include/pvfmm
+    /sw/include/pvfmm
   DOC "Include Directory for PVFMM"
 )
 
 find_library(PVFMM_LIBRARIES
   NAMES pvfmm
   PATHS
-    $ENV{CONDA_PREFIX}/lib
-    $ENV{CONDA_PREFIX}/lib
-    ENV LIBRARY_PATH
-    ENV LD_LIBRARY_PATH
-    /usr/lib
-    /usr/local/lib
-    /opt/local/lib
-    /sw/lib
+    $ENV{HOME}/local/lib/pvfmm
+    $ENV{CONDA_PREFIX}/lib/pvfmm
+    $ENV{CONDA_PREFIX}/lib/pvfmm
+    $ENV{LIBRARY_PATH}/pvfmm
+    $ENV{LD_LIBRARY_PATH}/pvfmm
+    /usr/lib/pvfmm
+    /usr/local/lib/pvfmm
+    /opt/local/lib/pvfmm
+    /sw/lib/pvfmm
   DOC "PVFMM library"
 )
 

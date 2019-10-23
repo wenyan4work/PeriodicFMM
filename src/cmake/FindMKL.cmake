@@ -29,77 +29,33 @@
 #  endif()
 
 # If already in cache, be silent
-if (MKL_INCLUDE_DIRS AND MKL_LIBRARIES AND MKL_INTERFACE_LIBRARY AND
-    MKL_SEQUENTIAL_LAYER_LIBRARY AND MKL_CORE_LIBRARY)
+if (MKL_INCLUDE_DIRS AND MKL_LIBRARIES AND MKL_SDL_LIBRARY)
   set (MKL_FIND_QUIETLY TRUE)
 endif()
 
-if(NOT BUILD_SHARED_LIBS)
-  set(INT_LIB "libmkl_intel_ilp64.a")
-  set(SEQ_LIB "libmkl_sequential.a")
-  set(THR_LIB "libmkl_intel_thread.a")
-  set(COR_LIB "libmkl_core.a")
-else()
-  set(INT_LIB "mkl_intel_ilp64")
-  set(SEQ_LIB "mkl_sequential")
-  set(THR_LIB "mkl_intel_thread")
-  set(COR_LIB "mkl_core")
-endif()
-
 find_path(MKL_INCLUDE_DIR NAMES mkl.h HINTS $ENV{MKLROOT}/include)
+find_path(MKL_FFTW_INCLUDE_DIR NAMES fftw3_mkl.h HINTS
+  $ENV{MKLROOT}/include/fftw
+  $ENV{MKLROOT}/include)
 
-find_library(MKL_INTERFACE_LIBRARY
-             NAMES ${INT_LIB}
+find_library(MKL_SDL_LIBRARY
+             NAMES mkl_rt
              PATHS $ENV{MKLROOT}/lib
                    $ENV{MKLROOT}/lib/intel64
                    $ENV{INTEL}/mkl/lib/intel64
              NO_DEFAULT_PATH)
 
-find_library(MKL_SEQUENTIAL_LAYER_LIBRARY
-             NAMES ${SEQ_LIB}
-             PATHS $ENV{MKLROOT}/lib
-                   $ENV{MKLROOT}/lib/intel64
-                   $ENV{INTEL}/mkl/lib/intel64
-             NO_DEFAULT_PATH)
 
-find_library(MKL_CORE_LIBRARY
-             NAMES ${COR_LIB}
-             PATHS $ENV{MKLROOT}/lib
-                   $ENV{MKLROOT}/lib/intel64
-                   $ENV{INTEL}/mkl/lib/intel64
-             NO_DEFAULT_PATH)
-
-set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIR})
-set(MKL_LIBRARIES ${MKL_INTERFACE_LIBRARY} ${MKL_SEQUENTIAL_LAYER_LIBRARY} ${MKL_CORE_LIBRARY})
-
-if (MKL_INCLUDE_DIR AND
-    MKL_INTERFACE_LIBRARY AND
-    MKL_SEQUENTIAL_LAYER_LIBRARY AND
-    MKL_CORE_LIBRARY)
-
-    if (NOT DEFINED ENV{CRAY_PRGENVPGI} AND
-        NOT DEFINED ENV{CRAY_PRGENVGNU} AND
-        NOT DEFINED ENV{CRAY_PRGENVCRAY} AND
-        NOT DEFINED ENV{CRAY_PRGENVINTEL})
-      set(ABI "-m64")
-    endif()
-
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMKL_ILP64 ${ABI}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMKL_ILP64 ${ABI}")
-
-else()
-
-  set(MKL_INCLUDE_DIRS "")
-  set(MKL_LIBRARIES "")
-  set(MKL_INTERFACE_LIBRARY "")
-  set(MKL_SEQUENTIAL_LAYER_LIBRARY "")
-  set(MKL_CORE_LIBRARY "")
-
-endif()
+set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIR} ${MKL_FFTW_INCLUDE_DIR})
+set(MKL_LIBRARIES ${MKL_SDL_LIBRARY})
 
 # Handle the QUIETLY and REQUIRED arguments and set MKL_FOUND to TRUE if
 # all listed variables are TRUE.
 INCLUDE(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(MKL DEFAULT_MSG MKL_LIBRARIES MKL_INCLUDE_DIRS MKL_INTERFACE_LIBRARY MKL_SEQUENTIAL_LAYER_LIBRARY MKL_CORE_LIBRARY)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(MKL DEFAULT_MSG MKL_LIBRARIES MKL_INCLUDE_DIRS MKL_SDL_LIBRARY)
 
 MARK_AS_ADVANCED(MKL_INCLUDE_DIRS MKL_LIBRARIES MKL_INTERFACE_LIBRARY MKL_SEQUENTIAL_LAYER_LIBRARY MKL_CORE_LIBRARY)
+
+add_library(mkl_rt INTERFACE)
+target_link_libraries(mkl_rt INTERFACE ${MKL_LIBRARIES})
+target_include_directories(mkl_rt SYSTEM INTERFACE ${MKL_INCLUDE_DIRS})

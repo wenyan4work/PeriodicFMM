@@ -8,9 +8,6 @@ add_executable(M2LLaplace
   src/Laplace3D3DDipole.cpp)
 
 target_link_libraries(M2LLaplace
-  ${PVFMM_LIBRARIES}
-  PeriodicFMM
-  mkl_rt
   Eigen3::Eigen
   OpenMP::OpenMP_CXX
   MPI::MPI_CXX)

@@ -5,7 +5,7 @@
  *      Author: wyan
  */
 
-#include "FMM/FMMWrapperWall2D.h"
+#include <FMM/FMMWrapperWall2D.hpp>
 
 #include "ChebNodal.h"
 
@@ -16,8 +16,8 @@
 
 #include <mpi.h>
 
-#include "Util/EigenDef.hpp"
-#include "Util/cmdparser.hpp"
+#include <FMM/EigenDef.hpp>
+#include <FMM/cmdparser.hpp>
 
 #define EPS (1e-12) // make sure EPS/10 is still valid
 #define MAXP 16

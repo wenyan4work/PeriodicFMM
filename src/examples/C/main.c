@@ -4,8 +4,8 @@
 
 #include <mpi.h>
 
-#include "Interface/FMMWrapper-c.h"
-#include "Interface/FMMWrapperWall2D-c.h"
+#include <FMM/FMMWrapper-c.h>
+#include <FMM/FMMWrapperWall2D-c.h>
 
 int main(int argc, char** argv) {
     MPI_Init(&argc,&argv);

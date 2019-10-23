@@ -7,9 +7,6 @@ add_executable(M2LStokes
 
 
 target_link_libraries(M2LStokes
-  ${PVFMM_LIBRARIES}
-  PeriodicFMM
-  mkl_rt
   Eigen3::Eigen
   OpenMP::OpenMP_CXX
   MPI::MPI_CXX)
