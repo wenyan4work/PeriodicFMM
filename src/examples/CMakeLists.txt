@@ -1,21 +1,21 @@
 
-add_executable(FMMPeriodic_C
-  C/main.c
-  )
+# add_executable(FMMPeriodic_C
+#   C/main.c
+#   )
 
-target_link_libraries(FMMPeriodic_C
-  pvfmm
-  PeriodicFMM
-  mkl_rt
-  m
-  stdc++
-  OpenMP::OpenMP_C
-  MPI::MPI_C
-  )
+# target_link_libraries(FMMPeriodic_C
+#   pvfmm
+#   PeriodicFMM
+#   mkl_rt
+#   m
+#   stdc++
+#   OpenMP::OpenMP_C
+#   MPI::MPI_C
+#   )
 
-install(TARGETS FMMPeriodic_C
-  RUNTIME DESTINATION bin
-  )
+# install(TARGETS FMMPeriodic_C
+#   RUNTIME DESTINATION bin
+#   )
 
 target_compile_options(FMMPeriodic_C PUBLIC "-DPVFMM_FFTW3_MKL")
 
