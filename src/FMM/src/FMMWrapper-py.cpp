@@ -103,7 +103,7 @@ void FMMWall2D_TreeClear(FMM_WrapperWall2D *fmm) { fmm->FMM_TreeClear(); }
 
 void FMMWall2D_DataClear(FMM_WrapperWall2D *fmm) { fmm->FMM_DataClear(); }
 
-BOOST_PYTHON_MODULE(periodic_fmm) {
+BOOST_PYTHON_MODULE(PyPeriodicFMM) {
     using namespace boost::python;
 
     // Initialize numpy
@@ -114,11 +114,7 @@ BOOST_PYTHON_MODULE(periodic_fmm) {
     enum_<FMM_Wrapper::PAXIS>("FMM_PAXIS")
         .value("NONE", FMM_Wrapper::NONE)
         .value("PX", FMM_Wrapper::PX)
-        .value("PY", FMM_Wrapper::PY)
-        .value("PZ", FMM_Wrapper::PZ)
         .value("PXY", FMM_Wrapper::PXY)
-        .value("PXZ", FMM_Wrapper::PXZ)
-        .value("PYZ", FMM_Wrapper::PYZ)
         .value("PXYZ", FMM_Wrapper::PXYZ);
     class_<FMM_Wrapper>("FMM_Wrapper",
                         init<int, int, int, FMM_Wrapper::PAXIS>());

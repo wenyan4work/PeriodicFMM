@@ -11,14 +11,17 @@ find_package(OpenMP REQUIRED)
 find_package(MKL REQUIRED)
 find_package(PVFMM REQUIRED)
 find_package(Eigen3 REQUIRED)
-# find_package(Boost REQUIRED)
-# find_package(PythonLibs)
+find_package(Boost REQUIRED COMPONENTS python numpy)
+find_package(PythonLibs 3 REQUIRED)
 
 include_directories("FMM/include"
-#  ${Boost_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
   ${PYTHON_INCLUDE_DIRS}
   ${MKL_INCLUDE_DIRS}
   )
+
+message("Python Includes: " ${PYTHON_INCLUDE_DIRS})
+message("Python Libs: " ${PYTHON_LIBRARIES})
 
 # Avoid compiler warnings from PVFMM headers
 include_directories(SYSTEM ${PVFMM_INCLUDE_DIR})

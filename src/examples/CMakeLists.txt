@@ -10,7 +10,7 @@ target_link_libraries(FMMPeriodic_C
   m
   stdc++
   OpenMP::OpenMP_C
-  MPI::MPI_C
+  MPI::MPI_CXX
   )
 
 install(TARGETS FMMPeriodic_C
