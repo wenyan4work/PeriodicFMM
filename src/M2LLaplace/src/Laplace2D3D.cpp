@@ -108,7 +108,6 @@ inline double gKernel(const EVec3 &target, const EVec3 &source) {
 inline double gKernelFF(const EVec3 &target, const EVec3 &source) {
     double fEwald = gKernelEwald(target, source);
     const int N = DIRECTLAYER;
-    const double L3 = 1.0;
     for (int i = -N; i < N + 1; i++) {
         for (int j = -N; j < N + 1; j++) {
             double gFree = gKernel(target, source - EVec3(i, j, 0));
@@ -290,7 +289,7 @@ int main(int argc, char **argv) {
         double temp = 0;
         Eigen::Vector3d Cpoint(pointMCheck[3 * k], pointMCheck[3 * k + 1],
                                pointMCheck[3 * k + 2]);
-        for (int p = 0; p < chargePoint.size(); p++) {
+        for (size_t p = 0; p < chargePoint.size(); p++) {
             temp = temp + gKernel(Cpoint, chargePoint[p]) * (chargeValue[p]);
         }
         f(k) = temp;
@@ -313,7 +312,7 @@ int main(int argc, char **argv) {
 
     for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
         for (int j = -DIRECTLAYER; j < 1 + DIRECTLAYER; j++) {
-            for (int p = 0; p < chargePoint.size(); p++) {
+            for (size_t p = 0; p < chargePoint.size(); p++) {
                 Usample +=
                     gKernel(samplePoint, chargePoint[p] + EVec3(i, j, 0)) *
                     chargeValue[p];
@@ -340,7 +339,7 @@ int main(int argc, char **argv) {
 
     for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
         for (int j = -DIRECTLAYER; j < 1 + DIRECTLAYER; j++) {
-            for (int p = 0; p < chargePoint.size(); p++) {
+            for (size_t p = 0; p < chargePoint.size(); p++) {
                 Usample +=
                     gKernel(samplePoint, chargePoint[p] + EVec3(i, j, 0)) *
                     chargeValue[p];

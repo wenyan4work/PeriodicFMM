@@ -31,7 +31,7 @@ void laplace_pgrad_uKernel(Matrix<Real_t> &src_coord, Matrix<Real_t> &src_value,
         NWTN_ITER = 3;
 
     Real_t nwtn_scal = 1; // scaling factor for newton iterations
-    for (int i = 0; i < NWTN_ITER; i++) {
+    for (size_t i = 0; i < NWTN_ITER; i++) {
         nwtn_scal = 2 * nwtn_scal * nwtn_scal * nwtn_scal;
     }
     const Real_t OOFP =
@@ -177,7 +177,7 @@ void laplace_dipolepotential_uKernel(Matrix<Real_t> &src_coord,
         NWTN_ITER = 3;
 
     Real_t nwtn_scal = 1; // scaling factor for newton iterations
-    for (int i = 0; i < NWTN_ITER; i++) {
+    for (size_t i = 0; i < NWTN_ITER; i++) {
         nwtn_scal = 2 * nwtn_scal * nwtn_scal * nwtn_scal;
     }
     const Real_t OOFP =
@@ -311,7 +311,7 @@ void laplace_dipolepgrad_uKernel(Matrix<Real_t> &src_coord,
         NWTN_ITER = 3;
 
     Real_t nwtn_scal = 1; // scaling factor for newton iterations
-    for (int i = 0; i < NWTN_ITER; i++) {
+    for (size_t i = 0; i < NWTN_ITER; i++) {
         nwtn_scal = 2 * nwtn_scal * nwtn_scal * nwtn_scal;
     }
     const Real_t OOFP =

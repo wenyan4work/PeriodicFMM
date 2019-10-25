@@ -46,7 +46,6 @@ inline EVec3 gKernelPBC(const EVec3 &target, const EVec3 &source) {
 // Out of Direct Sum Layer, far field part
 inline EVec3 gKernelFF(const EVec3 &target, const EVec3 &source) {
     EVec3 fPBC(0, 0, 0);
-    const int N = DIRECTLAYER;
     const double L3 = 1.0;
     for (int t = DIRECTLAYER + 1; t < 500000; t++) {
         fPBC += gKernel(target, source + EVec3(t * L3, 0, 0)) +
@@ -223,7 +222,7 @@ int main(int argc, char **argv) {
         EVec3 sum(0, 0, 0);
         Eigen::Vector3d Cpoint(pointMCheck[3 * k], pointMCheck[3 * k + 1],
                                pointMCheck[3 * k + 2]);
-        for (int p = 0; p < dipolePoint.size(); p++) {
+        for (size_t p = 0; p < dipolePoint.size(); p++) {
             EVec3 temp = gKernel(Cpoint, dipolePoint[p]);
             sum[0] += temp[0] * dipoleValue[p][0];
             sum[1] += temp[1] * dipoleValue[p][1];
@@ -254,7 +253,7 @@ int main(int argc, char **argv) {
     double UsampleSP = 0;
 
     for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
-        for (int p = 0; p < dipolePoint.size(); p++) {
+        for (size_t p = 0; p < dipolePoint.size(); p++) {
             Usample += gKernel(samplePoint, dipolePoint[p] + EVec3(i, 0, 0))
                            .dot(dipoleValue[p]);
         }

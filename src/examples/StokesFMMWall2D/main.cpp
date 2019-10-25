@@ -98,20 +98,6 @@ void initPtsTrgWall(std::vector<double> &trg_coord,
     const double shift = parser.get<double>("M");
     int nsource = parser.get<int>("S");
 
-    FMM_WrapperWall2D::PAXIS pset;
-    int pinput = parser.get<int>("P");
-    switch (pinput) {
-    case 0:
-        pset = FMM_WrapperWall2D::PAXIS::NONE;
-        break;
-    case 1:
-        pset = FMM_WrapperWall2D::PAXIS::PX;
-        break;
-    case 4:
-        pset = FMM_WrapperWall2D::PAXIS::PXY;
-        break;
-    }
-
     const int chebN = ntrgEdge;
     ChebNodal chebData(chebN);
     chebData.points[0] += 0;
@@ -140,7 +126,7 @@ void initPtsTrgWall(std::vector<double> &trg_coord,
             }
         }
         FILE *pfile = fopen("randomPointsWall.txt", "w");
-        for (int i = 0; i < trg_coord.size() / 3; i++) {
+        for (size_t i = 0; i < trg_coord.size() / 3; i++) {
             fprintf(pfile, "%e\t%e\t%e\n", trg_coord[3 * i],
                     trg_coord[3 * i + 1], trg_coord[3 * i + 2]);
         }
@@ -164,7 +150,7 @@ void initPtsTrgWall(std::vector<double> &trg_coord,
         }
 
         FILE *pfile = fopen("chebPointsWall.txt", "w");
-        for (int i = 0; i < chebMesh.size() / 3; i++) {
+        for (size_t i = 0; i < chebMesh.size() / 3; i++) {
             fprintf(pfile, "%e\t%e\t%e\n", chebMesh[3 * i], chebMesh[3 * i + 1],
                     chebMesh[3 * i + 2]);
         }
@@ -183,20 +169,6 @@ void initPtsTrgPBC(std::vector<double> &trg_coord,
     const double shift = parser.get<double>("M");
     const double zratio = parser.get<double>("Z");
     int nsource = parser.get<int>("S");
-
-    FMM_WrapperWall2D::PAXIS pset;
-    int pinput = parser.get<int>("P");
-    switch (pinput) {
-    case 0:
-        pset = FMM_WrapperWall2D::PAXIS::NONE;
-        break;
-    case 1:
-        pset = FMM_WrapperWall2D::PAXIS::PX;
-        break;
-    case 4:
-        pset = FMM_WrapperWall2D::PAXIS::PXY;
-        break;
-    }
 
     const int chebN = ntrgEdge;
     ChebNodal chebData(chebN);
@@ -252,7 +224,7 @@ void initPtsTrgPBC(std::vector<double> &trg_coord,
         }
 
         FILE *pfile = fopen("randomPointsPBC.txt", "w");
-        for (int i = 0; i < trg_coord.size() / 3; i++) {
+        for (size_t i = 0; i < trg_coord.size() / 3; i++) {
             fprintf(pfile, "%e\t%e\t%e\n", trg_coord[3 * i],
                     trg_coord[3 * i + 1], trg_coord[3 * i + 2]);
         }
@@ -298,7 +270,7 @@ void initPtsTrgPBC(std::vector<double> &trg_coord,
         }
 
         FILE *pfile = fopen("chebPointsPBC.txt", "w");
-        for (int i = 0; i < trg_coord.size() / 3; i++) {
+        for (size_t i = 0; i < trg_coord.size() / 3; i++) {
             fprintf(pfile, "%e\t%e\t%e\n", trg_coord[3 * i],
                     trg_coord[3 * i + 1], trg_coord[3 * i + 2]);
         }
@@ -321,20 +293,6 @@ void initPtsTrgSample(std::vector<double> &trg_coord,
     const double shift = parser.get<double>("M");
     const double zratio = parser.get<double>("Z");
     int nsource = parser.get<int>("S");
-
-    FMM_WrapperWall2D::PAXIS pset;
-    int pinput = parser.get<int>("P");
-    switch (pinput) {
-    case 0:
-        pset = FMM_WrapperWall2D::PAXIS::NONE;
-        break;
-    case 1:
-        pset = FMM_WrapperWall2D::PAXIS::PX;
-        break;
-    case 4:
-        pset = FMM_WrapperWall2D::PAXIS::PXY;
-        break;
-    }
 
     const int chebN = ntrgEdge;
     ChebNodal chebData(chebN);
@@ -370,7 +328,7 @@ void initPtsTrgSample(std::vector<double> &trg_coord,
             }
         }
         FILE *pfile = fopen("randomPointsSample.txt", "w");
-        for (int i = 0; i < trg_coord.size() / 3; i++) {
+        for (size_t i = 0; i < trg_coord.size() / 3; i++) {
             fprintf(pfile, "%e\t%e\t%e\n", trg_coord[3 * i],
                     trg_coord[3 * i + 1], trg_coord[3 * i + 2]);
         }
@@ -416,7 +374,7 @@ void initPtsTrgSample(std::vector<double> &trg_coord,
         }
 
         FILE *pfile = fopen("chebPointsSample.txt", "w");
-        for (int i = 0; i < chebMesh.size() / 3; i++) {
+        for (size_t i = 0; i < chebMesh.size() / 3; i++) {
             fprintf(pfile, "%e\t%e\t%e\n", chebMesh[3 * i], chebMesh[3 * i + 1],
                     chebMesh[3 * i + 2]);
         }
@@ -428,7 +386,6 @@ void initPtsTrgSample(std::vector<double> &trg_coord,
 void initPtsSRC(std::vector<double> &src_coord, std::vector<double> &src_value,
                 const cli::Parser &parser) {
     bool randomS = (parser.get<int>("R") > 0 ? true : false);
-    const int ntrgEdge = parser.get<int>("T");
     const double box = parser.get<double>("B");
     const double shift = parser.get<double>("M");
     const double zratio = parser.get<double>("Z");
@@ -508,13 +465,13 @@ void initPtsSRC(std::vector<double> &src_coord, std::vector<double> &src_value,
         // same as sample points
         initPtsTrgSample(src_coord, src_value, parser, randomS);
         FILE *pfile = fopen("srcPoints.txt", "w");
-        for (int i = 0; i < src_coord.size() / 3; i++) {
+        for (size_t i = 0; i < src_coord.size() / 3; i++) {
             fprintf(pfile, "%e\t%e\t%e\n", src_coord[3 * i],
                     src_coord[3 * i + 1], src_coord[3 * i + 2]);
         }
         fclose(pfile);
         pfile = fopen("srcValues.txt", "w");
-        for (int i = 0; i < src_value.size() / 3; i++) {
+        for (size_t i = 0; i < src_value.size() / 3; i++) {
             fprintf(pfile, "%e\t%e\t%e\n", src_value[3 * i],
                     src_value[3 * i + 1], src_value[3 * i + 2]);
         }
@@ -625,7 +582,7 @@ void checkErrorSample(std::vector<double> &trg_value,
     double errorL2 = 0, errorAbs = 0, L2 = 0, errorMaxL2 = 0, maxU = 0;
     double errorMaxRel = 0;
 
-    for (int i = 0; i < trg_value_true.size(); i++) {
+    for (size_t i = 0; i < trg_value_true.size(); i++) {
         double temp = pow(trg_value_true[i] - trg_value[i], 2);
         // std::cout << trg_value[i]-trg_value_true[i] << std::endl;
         // calc error and max error
@@ -809,8 +766,6 @@ int main(int argc, char **argv) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     // send to test
-    double boxfac = pow(box / 2, 2); // for surface integral, scale the cheb
-                                     // weight from [-1,1] to box length
     for (int p = 6; p <= MAXP; p += 2) {
         MPI_Barrier(MPI_COMM_WORLD);
         runFMM(trgValueWall, trgCoordWall, trgValuePBC, trgCoordPBC,

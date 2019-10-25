@@ -30,7 +30,7 @@ class FMM_WrapperWall2D {
 
     void FMM_DataClear();
 
-    void FMM_Evaluate(std::vector<double> &trg_val, const int n_trg,
+    void FMM_Evaluate(std::vector<double> &trg_val, const size_t n_trg,
                       std::vector<double> *src_val);
 
     void FMM_UpdateTree(const std::vector<double> &src_coord,
@@ -90,7 +90,7 @@ class FMM_WrapperWall2D {
     std::vector<double> trgCoordScaled;
 
     int pEquiv;
-    int equivN;
+    size_t equivN;
     double scaleLEquiv;      // = 1.05;
     double pCenterLEquiv[3]; // = { -(scaleLEquiv - 1) / 2, -(scaleLEquiv - 1) /
                              // 2, -(scaleLEquiv - 1) / 2 };

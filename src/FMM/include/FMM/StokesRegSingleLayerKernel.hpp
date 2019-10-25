@@ -184,7 +184,7 @@ void stokes_regftvel(T *r_src, int src_cnt, T *v_src, int dof, T *r_trg,
                      int trg_cnt, T *v_trg, mem::MemoryManager *mem_mgr) {
     constexpr T pi8 = (8 * 3.14159265358979323846);
     for (int i = 0; i < trg_cnt; i++) {
-        T vx = 0, vy = 0, vz = 0, wx = 0, wy = 0, wz = 0;
+        T vx = 0, vy = 0, vz = 0;
         const T trgx = r_trg[3 * i];
         const T trgy = r_trg[3 * i + 1];
         const T trgz = r_trg[3 * i + 2];
@@ -205,25 +205,18 @@ void stokes_regftvel(T *r_src, int src_cnt, T *v_src, int dof, T *r_trg,
             const T dz = trgz - sz;
             // length squared of r
             T r2 = dx * dx + dy * dy + dz * dz;
-            T r4 = r2 * r2;
 
             // regularization parameter squared
             T eps2 = eps * eps;
-            T eps4 = eps2 * eps2;
 
             T denom_arg = eps2 + r2;
             T stokeslet_denom = pi8 * denom_arg * std::sqrt(denom_arg);
             T rotlet_denom = 2 * stokeslet_denom * denom_arg;
-            T dipole_denom = 2 * rotlet_denom * denom_arg;
             T rotlet_coef = (2 * r2 + 5.0 * eps2) / rotlet_denom;
             // T D1 = (10 * eps4 - 7 * eps2 * r2 - 2 * r4) / dipole_denom;
             // T D2 = (21 * eps2 + 6 * r2) / dipole_denom;
             T H2 = 1.0 / stokeslet_denom;
             T H1 = (r2 + 2.0 * eps2) * H2;
-
-            T fcurlrx = fy * dz - fz * dy;
-            T fcurlry = fz * dx - fx * dz;
-            T fcurlrz = fx * dy - fy * dx;
 
             T tcurlrx = ty * dz - tz * dy;
             T tcurlry = tz * dx - tx * dz;

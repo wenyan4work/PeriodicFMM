@@ -150,7 +150,6 @@ int main(int argc, char **argv) {
         //		std::cout<<"debug:"<<Mpoint<<std::endl;
         for (int k = 0; k < checkN; k++) {
             Eigen::Matrix3d temp = Eigen::Matrix3d::Zero();
-            Eigen::Matrix3d G = Eigen::Matrix3d::Zero();
             Eigen::Vector3d Cpoint(pointLCheck[3 * k], pointLCheck[3 * k + 1],
                                    pointLCheck[3 * k + 2]);
             //			std::cout<<"debug:"<<k<<std::endl;
@@ -240,7 +239,7 @@ int main(int argc, char **argv) {
         forcePointExt(0);
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
         forceValueExt(0);
-    for (int p = 0; p < forcePoint.size(); p++) {
+    for (size_t p = 0; p < forcePoint.size(); p++) {
         for (int k = -DIRECTLAYER; k < DIRECTLAYER + 1; k++) {
             forcePointExt.push_back(Eigen::Vector3d(k, 0, 0) + forcePoint[p]);
             forceValueExt.push_back(forceValue[p]);
@@ -252,7 +251,7 @@ int main(int argc, char **argv) {
     Eigen::Vector3d Usample(0, 0, 0);
     Eigen::Vector3d UsampleSP(0, 0, 0);
     Eigen::Matrix3d G;
-    for (int p = 0; p < forcePointExt.size(); p++) {
+    for (size_t p = 0; p < forcePointExt.size(); p++) {
         Gkernel(samplePoint, forcePointExt[p], G);
         Usample += G * (forceValueExt[p]);
     }
@@ -271,7 +270,7 @@ int main(int argc, char **argv) {
     std::cout << "Usample M2L total:" << UsampleSP + Usample << std::endl;
 
     Eigen::Vector3d UsampleN(0, 0, 0);
-    for (int p = 0; p < forcePoint.size(); p++) {
+    for (size_t p = 0; p < forcePoint.size(); p++) {
         Eigen::Matrix3d G1 = Eigen::Matrix3d::Zero();
         Eigen::Matrix3d G2 = Eigen::Matrix3d::Zero();
         for (int per = DIRECTLAYER + 1; per < imageN; per++) {

@@ -19,10 +19,10 @@ inline void gemm(char TransA, char TransB, int M, int N, int K, T alpha, T *A,
                  int lda, T *B, int ldb, T beta, T *C, int ldc) {
     if ((TransA == 'N' || TransA == 'n') && (TransB == 'N' || TransB == 'n')) {
 #pragma omp parallel for
-        for (size_t n = 0; n < N; n++) {     // Columns of C
-            for (size_t m = 0; m < M; m++) { // Rows of C
+        for (auto n = 0; n < N; n++) {     // Columns of C
+            for (auto m = 0; m < M; m++) { // Rows of C
                 T AxB = 0;
-                for (size_t k = 0; k < K; k++) {
+                for (auto k = 0; k < K; k++) {
                     AxB += A[m + lda * k] * B[k + ldb * n];
                 }
                 C[m + ldc * n] =
@@ -31,10 +31,10 @@ inline void gemm(char TransA, char TransB, int M, int N, int K, T alpha, T *A,
         }
     } else if (TransA == 'N' || TransA == 'n') {
 #pragma omp parallel for
-        for (size_t n = 0; n < N; n++) {     // Columns of C
-            for (size_t m = 0; m < M; m++) { // Rows of C
+        for (auto n = 0; n < N; n++) {     // Columns of C
+            for (auto m = 0; m < M; m++) { // Rows of C
                 T AxB = 0;
-                for (size_t k = 0; k < K; k++) {
+                for (auto k = 0; k < K; k++) {
                     AxB += A[m + lda * k] * B[n + ldb * k];
                 }
                 C[m + ldc * n] =
@@ -43,10 +43,10 @@ inline void gemm(char TransA, char TransB, int M, int N, int K, T alpha, T *A,
         }
     } else if (TransB == 'N' || TransB == 'n') {
 #pragma omp parallel for
-        for (size_t n = 0; n < N; n++) {     // Columns of C
-            for (size_t m = 0; m < M; m++) { // Rows of C
+        for (auto n = 0; n < N; n++) {     // Columns of C
+            for (auto m = 0; m < M; m++) { // Rows of C
                 T AxB = 0;
-                for (size_t k = 0; k < K; k++) {
+                for (auto k = 0; k < K; k++) {
                     AxB += A[k + lda * m] * B[k + ldb * n];
                 }
                 C[m + ldc * n] =
@@ -55,10 +55,10 @@ inline void gemm(char TransA, char TransB, int M, int N, int K, T alpha, T *A,
         }
     } else {
 #pragma omp parallel for
-        for (size_t n = 0; n < N; n++) {     // Columns of C
-            for (size_t m = 0; m < M; m++) { // Rows of C
+        for (auto n = 0; n < N; n++) {     // Columns of C
+            for (auto m = 0; m < M; m++) { // Rows of C
                 T AxB = 0;
-                for (size_t k = 0; k < K; k++) {
+                for (auto k = 0; k < K; k++) {
                     AxB += A[k + lda * m] * B[n + ldb * k];
                 }
                 C[m + ldc * n] =
@@ -369,16 +369,18 @@ inline void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA, T *S,
     const size_t ldu = *LDU;
     const size_t ldv = *LDVT;
 
-    if (dim[1] == *M) {
-        for (size_t i = 0; i < dim[0]; i++)
+    if (dim[1] == static_cast<size_t>(*M)) {
+        for (size_t i = 0; i < dim[0]; i++) {
             for (size_t j = 0; j < dim[1]; j++) {
                 S_[i * dim[1] + j] = A[i * lda + j];
             }
+        }
     } else {
-        for (size_t i = 0; i < dim[0]; i++)
+        for (size_t i = 0; i < dim[0]; i++) {
             for (size_t j = 0; j < dim[1]; j++) {
                 S_[i * dim[1] + j] = A[j * lda + i];
             }
+        }
     }
     for (size_t i = 0; i < dim[0]; i++) {
         U_[i * dim[0] + i] = 1;
@@ -392,24 +394,24 @@ inline void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA, T *S,
     for (size_t i = 0; i < dim[1]; i++) { // Set S
         S[i] = S_[i * dim[1] + i];
     }
-    if (dim[1] == *M) { // Set U
+    if (dim[1] == static_cast<size_t>(*M)) { // Set U
         for (size_t i = 0; i < dim[1]; i++)
-            for (size_t j = 0; j < *M; j++) {
+            for (int j = 0; j < *M; j++) {
                 U[j + ldu * i] = V_[j + i * dim[1]] * (S[i] < 0.0 ? -1.0 : 1.0);
             }
     } else {
         for (size_t i = 0; i < dim[1]; i++)
-            for (size_t j = 0; j < *M; j++) {
+            for (int j = 0; j < *M; j++) {
                 U[j + ldu * i] = U_[i + j * dim[0]] * (S[i] < 0.0 ? -1.0 : 1.0);
             }
     }
-    if (dim[0] == *N) { // Set V
-        for (size_t i = 0; i < *N; i++)
+    if (dim[0] == static_cast<size_t>(*N)) { // Set V
+        for (int i = 0; i < *N; i++)
             for (size_t j = 0; j < dim[1]; j++) {
                 VT[j + ldv * i] = U_[j + i * dim[0]];
             }
     } else {
-        for (size_t i = 0; i < *N; i++)
+        for (int i = 0; i < *N; i++)
             for (size_t j = 0; j < dim[1]; j++) {
                 VT[j + ldv * i] = V_[i + j * dim[1]];
             }
@@ -610,7 +612,7 @@ inline void pinv(const Eigen::MatrixXd &Mat, Eigen::MatrixXd &MatPinvU,
 
     double eps_ = tS[0] * eps;
 
-    for (size_t i = 0; i < k; i++) {
+    for (int i = 0; i < k; i++) {
         tS[i] = (tS[i] > eps_ * 4 ? 1.0 / tS[i] : 0.0);
     }
 

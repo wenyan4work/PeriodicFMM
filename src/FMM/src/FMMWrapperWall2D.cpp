@@ -321,7 +321,7 @@ void FMM_WrapperWall2D::FMM_UpdateTree(const std::vector<double> &src_coord,
 }
 
 void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val,
-                                     const int n_trg,
+                                     const size_t n_trg,
                                      std::vector<double> *src_val) {
     if (n_trg != trg_val.size() / 3) {
         printf("n_trg error \n");
@@ -332,8 +332,6 @@ void FMM_WrapperWall2D::FMM_Evaluate(std::vector<double> &trg_val,
         printf("Error, no source value\n");
         exit(1);
     }
-
-    const int nsrc = src_val->size() / 3;
 
     // evaluate 1, Stokes FMM
     evalStokes(n_trg, src_val);
@@ -399,7 +397,6 @@ void FMM_WrapperWall2D::calcMStokes() {
     // add to trg_value
     const int n_trg = trgCoord.Dim() / 3;
     assert(trgCoord.Dim() == trgValueStokes.size());
-    const double pi = 3.1415926535897932384626433;
 
     int M = 3 * equivN;
     int N = 3 * equivN; // checkN = equivN in this code.
@@ -479,7 +476,7 @@ void FMM_WrapperWall2D::calcMLapCharge(int treeSelect) {
     // calculate M2L, Laplace kernel 1x1, with gradient 3*1
     auto &trgCoord = *trgCoordPtr;
     auto &trgValue = *trgValuePtr;
-    const int nTrg = trgCoord.Dim() / 3;
+    const size_t nTrg = trgCoord.Dim() / 3;
     if (nTrg * 4 != trgValue.size()) {
         printf("trg coord and value size error for lap %d", treeSelect);
         exit(1);
@@ -760,8 +757,8 @@ void FMM_WrapperWall2D::scalePoints(const std::vector<double> &srcCoord,
     // filled srcCoordScaled, srcImageCoordScaled, trgCoordScaled
 
     // srcCoordScaled:
-    const int nsrc = srcCoord.size() / 3;
-    const int ntrg = trgCoord.size() / 3;
+    const size_t nsrc = srcCoord.size() / 3;
+    const size_t ntrg = trgCoord.size() / 3;
 
     srcCoordScaled.resize(nsrc * 3);
     trgCoordScaled.resize(ntrg * 3);

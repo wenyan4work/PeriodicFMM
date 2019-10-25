@@ -17,13 +17,16 @@ find_package(Eigen3 REQUIRED)
 include_directories("FMM/include"
 #  ${Boost_INCLUDE_DIRS}
   ${PYTHON_INCLUDE_DIRS}
-  ${PVFMM_INCLUDE_DIR}
   ${MKL_INCLUDE_DIRS}
   )
+
+# Avoid compiler warnings from PVFMM headers
+include_directories(SYSTEM ${PVFMM_INCLUDE_DIR})
+
 if (DEFINED ENV{CONDA_PREFIX})
   message("Including conda paths")
   set(CONDA_PREFIX ENV{CONDA_PREFIX})
-  include_directories("$ENV{CONDA_PREFIX}/include")
+  include_directories(SYSTEM "$ENV{CONDA_PREFIX}/include")
 endif()
 
 add_subdirectory(FMM)

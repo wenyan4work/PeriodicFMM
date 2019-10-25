@@ -103,7 +103,7 @@ void collectPts(std::vector<double> &pts) {
     displs.resize(recvSize.size());
     if (displs.size() > 0) {
         displs[0] = 0;
-        for (int i = 1; i < displs.size(); i++) {
+        for (size_t i = 1; i < displs.size(); i++) {
             displs[i] = recvSize[i - 1] + displs[i - 1];
         }
     }
@@ -167,7 +167,7 @@ void calcTrueValueN2(std::vector<double> &trg_value_true,
         // calc Ewald accuracy test
         trg_value_true.resize(trg_coord.size());
 #pragma omp parallel for
-        for (int t = 0; t < trg_coord.size() / 3; t++) {
+        for (size_t t = 0; t < trg_coord.size() / 3; t++) {
             Eigen::Vector3d target(trg_coord[3 * t], trg_coord[3 * t + 1],
                                    trg_coord[3 * t + 2]);
             // shift and scale to [0,1)
@@ -177,7 +177,7 @@ void calcTrueValueN2(std::vector<double> &trg_value_true,
             target *= (1 / box);
 
             Eigen::Vector3d targetValue(0, 0, 0);
-            for (int s = 0; s < src_coord.size() / 3; s++) {
+            for (size_t s = 0; s < src_coord.size() / 3; s++) {
                 Eigen::Vector3d source(src_coord[3 * s], src_coord[3 * s + 1],
                                        src_coord[3 * s + 2]);
                 Eigen::Vector3d sourceValue(src_value[3 * s],
@@ -271,7 +271,7 @@ void initPts(std::vector<double> &src_coord, std::vector<double> &src_value,
     }
     {
         FILE *pfile = fopen("trgPoints.txt", "w");
-        for (int i = 0; i < trg_coord.size() / 3; i++) {
+        for (size_t i = 0; i < trg_coord.size() / 3; i++) {
             fprintf(pfile, "%f\t%f\t%f\n", trg_coord[3 * i],
                     trg_coord[3 * i + 1], trg_coord[3 * i + 2]);
         }
@@ -448,7 +448,7 @@ void testFMM(std::vector<double> &trg_value, std::vector<double> &trg_coord,
         // calc error and max error
         double errorL2 = 0, errorAbs = 0, L2 = 0, errorMaxL2 = 0, maxU = 0;
         double errorMaxRel = 0;
-        for (int i = 0; i < trg_value_true.size(); i++) {
+        for (size_t i = 0; i < trg_value_true.size(); i++) {
             double temp = pow(trg_value_true[i] - trg_value[i], 2);
             // std::cout << trg_value[i]-trg_value_true[i] << std::endl;
             // calc error and max error

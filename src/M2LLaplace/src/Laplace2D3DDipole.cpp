@@ -88,7 +88,6 @@ inline EVec3 gKernelEwald(const EVec3 &xm, const EVec3 &xn) {
     int wLim = 6;
     EVec3 Kwave(0, 0, 0);
     EVec3 rmn = target - source;
-    const double rmnnorm = rmn.norm();
     const double zmn = rmn[2];
     rmn[2] = 0;
     for (int i = -wLim; i <= wLim; i++) {
@@ -127,7 +126,6 @@ inline EVec3 gKernel(const EVec3 &target, const EVec3 &source) {
 inline EVec3 gKernelFF(const EVec3 &target, const EVec3 &source) {
     EVec3 fEwald = gKernelEwald(target, source);
     const int N = DIRECTLAYER;
-    const double L3 = 1.0;
     for (int i = -N; i < N + 1; i++) {
         for (int j = -N; j < N + 1; j++) {
             EVec3 gFree = gKernel(target, source - EVec3(i, j, 0));
@@ -330,7 +328,7 @@ int main(int argc, char **argv) {
         EVec3 sum(0, 0, 0);
         Eigen::Vector3d Cpoint(pointMCheck[3 * k], pointMCheck[3 * k + 1],
                                pointMCheck[3 * k + 2]);
-        for (int p = 0; p < dipolePoint.size(); p++) {
+        for (size_t p = 0; p < dipolePoint.size(); p++) {
             EVec3 temp = gKernel(Cpoint, dipolePoint[p]);
             sum[0] += temp[0] * dipoleValue[p][0];
             sum[1] += temp[1] * dipoleValue[p][1];
@@ -362,7 +360,7 @@ int main(int argc, char **argv) {
 
     for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
         for (int j = -DIRECTLAYER; j < 1 + DIRECTLAYER; j++) {
-            for (int p = 0; p < dipolePoint.size(); p++) {
+            for (size_t p = 0; p < dipolePoint.size(); p++) {
                 Usample += gKernel(samplePoint, dipolePoint[p] + EVec3(i, j, 0))
                                .dot(dipoleValue[p]);
             }

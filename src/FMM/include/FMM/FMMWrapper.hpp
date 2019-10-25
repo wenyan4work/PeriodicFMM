@@ -20,8 +20,8 @@ class FMM_Wrapper {
     enum PAXIS { NONE = 0, PX = 1, PXY = 4, PXYZ = 7 };
     const PAXIS pbc;
     // kernel function dimension for source and target
-    const int SDim;
-    const int TDim;
+    const size_t SDim;
+    const size_t TDim;
     // kernel function reference
     const pvfmm::Kernel<double> &kernelG;
 
@@ -34,7 +34,7 @@ class FMM_Wrapper {
 
     void FMM_DataClear();
 
-    void FMM_Evaluate(std::vector<double> &trg_val, const int n_trg,
+    void FMM_Evaluate(std::vector<double> &trg_val, const size_t n_trg,
                       std::vector<double> *src_val);
 
     void FMM_UpdateTree(const std::vector<double> &src_coord,

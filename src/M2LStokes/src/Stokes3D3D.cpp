@@ -303,7 +303,6 @@ int main(int argc, char **argv) {
         Eigen::MatrixXd f(3 * checkN, 3);
         for (int k = 0; k < checkN; k++) {
             Eigen::Matrix3d temp = Eigen::Matrix3d::Zero();
-            Eigen::Matrix3d G = Eigen::Matrix3d::Zero();
             Eigen::Vector3d Cpoint(pointLCheck[3 * k], pointLCheck[3 * k + 1],
                                    pointLCheck[3 * k + 2]);
             //			std::cout<<"debug:"<<k<<std::endl;
@@ -356,7 +355,7 @@ int main(int argc, char **argv) {
         Eigen::Matrix3d G = Eigen::Matrix3d::Zero();
         Eigen::Vector3d Cpoint(pointMCheck[3 * k], pointMCheck[3 * k + 1],
                                pointMCheck[3 * k + 2]);
-        for (int p = 0; p < forcePoint.size(); p++) {
+        for (size_t p = 0; p < forcePoint.size(); p++) {
             Gkernel(Cpoint, forcePoint[p], G);
             temp = temp + G * (forceValue[p]);
         }
@@ -383,7 +382,7 @@ int main(int argc, char **argv) {
     double fnetx = 0;
     double fnety = 0;
     double fnetz = 0;
-    for (int p = 0; p < forcePoint.size(); p++) {
+    for (size_t p = 0; p < forcePoint.size(); p++) {
         fnetx += (forceValue[p][0]);
         fnety += (forceValue[p][1]);
         fnetz += (forceValue[p][2]);
@@ -407,7 +406,7 @@ int main(int argc, char **argv) {
         forcePointExt(0);
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
         forceValueExt(0);
-    for (int p = 0; p < forcePoint.size(); p++) {
+    for (size_t p = 0; p < forcePoint.size(); p++) {
         for (int i = -DIRECTLAYER; i < DIRECTLAYER + 1; i++) {
             for (int j = -DIRECTLAYER; j < DIRECTLAYER + 1; j++) {
                 for (int k = -DIRECTLAYER; k < DIRECTLAYER + 1; k++) {
@@ -425,7 +424,7 @@ int main(int argc, char **argv) {
     Eigen::Vector3d Usample(0, 0, 0);
     Eigen::Vector3d UsampleSP(0, 0, 0);
     Eigen::Matrix3d G;
-    for (int p = 0; p < forcePointExt.size(); p++) {
+    for (size_t p = 0; p < forcePointExt.size(); p++) {
         Gkernel(samplePoint, forcePointExt[p], G);
         Usample = Usample + G * (forceValueExt[p]);
     }
@@ -443,7 +442,7 @@ int main(int argc, char **argv) {
     std::cout << "Usample M2L total:" << UsampleSP + Usample << std::endl;
 
     Eigen::Vector3d UsampleDirect = 0 * Usample;
-    for (int p = 0; p < forcePoint.size(); p++) {
+    for (size_t p = 0; p < forcePoint.size(); p++) {
         GkernelEwald(samplePoint - forcePoint[p], G);
         UsampleDirect += G * (forceValue[p]);
     }

@@ -78,8 +78,6 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
 double directSum(const EVec3 &target, const EVec3 &source,
                  const int directTerm = 500000) {
     // use asymptotic
-    const double A = (target - source).dot(target - source);
-    const double c = fabs(target[2] - source[2]);
     const double L3 = 1.0;
     double potentialDirect = 0;
     for (int t = DIRECTLAYER + 1; t < directTerm; t++) {
@@ -193,7 +191,7 @@ int main(int argc, char **argv) {
         double temp = 0;
         Eigen::Vector3d Cpoint(pointMCheck[3 * k], pointMCheck[3 * k + 1],
                                pointMCheck[3 * k + 2]);
-        for (int p = 0; p < chargePoint.size(); p++) {
+        for (size_t p = 0; p < chargePoint.size(); p++) {
             temp = temp + gKernel(Cpoint, chargePoint[p]) * (chargeValue[p]);
         }
         f(k) = temp;
@@ -228,7 +226,7 @@ int main(int argc, char **argv) {
     double UsampleSP = 0;
 
     for (int k = -DIRECTLAYER; k < 1 + DIRECTLAYER; k++) {
-        for (int p = 0; p < chargePoint.size(); p++) {
+        for (size_t p = 0; p < chargePoint.size(); p++) {
             Usample += gKernel(samplePoint, chargePoint[p] + EVec3(k, 0, 0)) *
                        chargeValue[p];
         }
@@ -251,7 +249,7 @@ int main(int argc, char **argv) {
     UsampleSP = 0;
 
     for (int k = -DIRECTLAYER; k < 1 + DIRECTLAYER; k++) {
-        for (int p = 0; p < chargePoint.size(); p++) {
+        for (size_t p = 0; p < chargePoint.size(); p++) {
             Usample += gKernel(samplePoint, chargePoint[p] + EVec3(k, 0, 0)) *
                        chargeValue[p];
         }

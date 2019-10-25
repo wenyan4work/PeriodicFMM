@@ -16,7 +16,6 @@
 
 extern pvfmm::PeriodicType pvfmm::periodicType;
 
-constexpr double pi = 3.1415926535897932384626433;
 // return fraction part between [0,1)
 /*
  * This function is only applied in the PERIODIC DIRECTION
@@ -321,7 +320,7 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord,
     const double scaleFactor = this->scaleFactor;
 
     // Set source points, with scale
-    const int nsrc = src_coord.size() / 3;
+    const size_t nsrc = src_coord.size() / 3;
     treeData.src_coord.Resize(nsrc * 3);
     // No rotation
     if (pbc == PAXIS::PX) {
@@ -379,7 +378,7 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord,
 
     // Set target points.
     // use the same periodic wrap as source
-    const int ntrg = trg_coord.size() / 3;
+    const size_t ntrg = trg_coord.size() / 3;
     treeData.trg_coord.Resize(ntrg * 3);
     // No rotation
     if (pbc == PAXIS::PX) {
@@ -464,7 +463,7 @@ void FMM_Wrapper::FMM_UpdateTree(const std::vector<double> &src_coord,
 #endif
 }
 
-void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg,
+void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const size_t n_trg,
                                std::vector<double> *src_val_ptr) {
     FMM_DataClear();
 
@@ -474,7 +473,7 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg,
         printf("Error, no source value\n");
         exit(1);
     }
-    const int nsrc = src_val_ptr->size() / SDim;
+    const size_t nsrc = src_val_ptr->size() / SDim;
     if (nsrc * 3 != treeData.src_coord.Dim()) {
         printf("src_val size error\n");
         exit(1);
@@ -485,7 +484,7 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg,
         // scale the epsilon regularize factor
         // the torque term should also be scaled
 #pragma omp parallel for
-        for (int i = 0; i < nsrc; i++) {
+        for (size_t i = 0; i < nsrc; i++) {
             srcValueScaled[i * SDim + SDim - 4] *= scaleFactor;
             srcValueScaled[i * SDim + SDim - 3] *= scaleFactor;
             srcValueScaled[i * SDim + SDim - 2] *= scaleFactor;
@@ -513,7 +512,7 @@ void FMM_Wrapper::FMM_Evaluate(std::vector<double> &trg_val, const int n_trg,
         for (int j = 0; j < 3; j++) {
             trg_val[TDim * i + j] = trgValueScaled[TDim * i + j] * scaleFactor;
         }
-        for (int j = 3; j < TDim; j++) {
+        for (size_t j = 3; j < TDim; j++) {
             trg_val[TDim * i + j] =
                 trgValueScaled[TDim * i + j] * scaleFactor * scaleFactor;
         }
