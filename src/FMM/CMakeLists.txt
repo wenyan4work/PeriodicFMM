@@ -28,7 +28,6 @@ include/FMM/cmdparser.hpp")
 
 add_library(PeriodicFMM_static STATIC $<TARGET_OBJECTS:objFMM>)
 
-
 add_library(PyPeriodicFMM SHARED ${PeriodicFMM_PYTHON_SOURCE})
 set_target_properties(PyPeriodicFMM PROPERTIES PREFIX "")
 target_link_libraries(PyPeriodicFMM
@@ -50,3 +49,24 @@ install(TARGETS PeriodicFMM PeriodicFMM_static
   )
 
 install(EXPORT PeriodicFMMConfig DESTINATION share/PeriodicFMM/cmake)
+
+find_program(PYTHON "python")
+
+if (PYTHON)
+  set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/src/setup.py.in")
+  set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
+  set(DEPS        PyPeriodicFMM)
+  set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/PyPeriodicFMM")
+
+  configure_file(${SETUP_PY_IN} ${SETUP_PY})
+
+  add_custom_command(OUTPUT ${OUTPUT}
+    COMMAND ${PYTHON} ${SETUP_PY} build
+    COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
+    DEPENDS ${DEPS}
+    )
+
+  add_custom_target(PyPeriodicFMM-install ALL DEPENDS ${OUTPUT})
+
+  install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install)")
+endif()
