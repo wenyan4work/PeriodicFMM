@@ -43,7 +43,6 @@ class FMM_Wrapper {
     void FMM_SetBox(double, double, double, double, double, double);
 
   private:
-    Timer myTimer;
     double xlow, xhigh; // box
     double ylow, yhigh;
     double zlow, zhigh;
@@ -79,6 +78,7 @@ class FMM_Wrapper {
     std::vector<double> pointLEquiv;
     // = surface(pEquiv, (double *) &(pCenterLCheck[0]), scaleLCheck, 0);
     // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
+    Timer myTimer;
 };
 
 #endif /* INCLUDE_FMMWRAPPER_H_ */

@@ -39,7 +39,6 @@ class FMM_WrapperWall2D {
     void FMM_SetBox(double, double, double, double, double, double);
 
   private:
-    Timer myTimer;
     double xlow, xhigh; // box
     double ylow, yhigh;
     double zlow, zhigh;
@@ -97,6 +96,8 @@ class FMM_WrapperWall2D {
     std::vector<double> M2Lsource; // the equivalent sources after the operation
 
     std::vector<double> pointLEquiv;
+    Timer myTimer;
+
     // = surface(pEquiv, (double *) &(pCenterLCheck[0]), scaleLCheck, 0);
     // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 

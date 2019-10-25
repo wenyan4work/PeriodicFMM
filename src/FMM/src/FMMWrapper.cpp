@@ -78,12 +78,12 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
 
 FMM_Wrapper::FMM_Wrapper(int mult_order, int max_pts, int init_depth,
                          PAXIS pbc_, bool reg)
-    : mult_order(mult_order), max_pts(max_pts), init_depth(init_depth),
-      pbc(pbc_), xlow(0), xhigh(1), ylow(0), yhigh(1), zlow(0), zhigh(1),
-      scaleFactor(1), xshift(0), yshift(0), zshift(0), regularized(reg),
-      SDim(reg ? 7 : 3), TDim(reg ? 6 : 3),
+    : pbc(pbc_), SDim(reg ? 7 : 3), TDim(reg ? 6 : 3),
       kernelG(reg ? pvfmm::StokesRegKernel<double>::FTVelOmega()
-                  : pvfmm::StokesKernel<double>::velocity())
+                  : pvfmm::StokesKernel<double>::velocity()),
+      xlow(0), xhigh(1), ylow(0), yhigh(1), zlow(0), zhigh(1), scaleFactor(1),
+      xshift(0), yshift(0), zshift(0), mult_order(mult_order), max_pts(max_pts),
+      init_depth(init_depth), regularized(reg)
 #ifndef FMMTIMING
       ,
       myTimer(false)
