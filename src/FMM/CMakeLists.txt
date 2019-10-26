@@ -71,6 +71,12 @@ if (PYTHON)
   set(DEPS        PyPeriodicFMM)
   set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/dummy")
 
+  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(LIB_EXTENSION "dylib")
+  else ()
+    set(LIB_EXTENSION "so")
+  endif ()
+
   configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
   add_custom_command(OUTPUT ${OUTPUT}
