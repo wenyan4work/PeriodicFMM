@@ -21,6 +21,10 @@ target_link_libraries(PeriodicFMM
   MPI::MPI_CXX
   )
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_link_options(PeriodicFMM PUBLIC -flat_namespace -undefined suppress)
+endif()
+
 set_target_properties(PeriodicFMM PROPERTIES PUBLIC_HEADER "\
 include/FMM/EigenDef.hpp;\
 include/FMM/FMMWrapper-c.h;\
@@ -42,17 +46,19 @@ target_link_libraries(PeriodicFMM_static
   )
 
 add_library(PyPeriodicFMM SHARED ${PeriodicFMM_PYTHON_SOURCE})
-set_target_properties(PyPeriodicFMM PROPERTIES PREFIX "")
+set_target_properties(PyPeriodicFMM PROPERTIES
+  PREFIX ""
+  SUFFIX ".so")
 target_link_libraries(PyPeriodicFMM
-  PeriodicFMM
+  PeriodicFMM_static
   pvfmm
-  mkl_rt
-  OpenMP::OpenMP_CXX
-  MPI::MPI_CXX
-  ${PYTHON_LIBRARIES}
-  Boost::python
   Boost::numpy
   )
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_link_options(PyPeriodicFMM PUBLIC -flat_namespace -undefined suppress)
+endif ()
+
 
 install(TARGETS PeriodicFMM PeriodicFMM_static
 #  EXPORT PeriodicFMMConfig
@@ -70,12 +76,6 @@ if (PYTHON)
   set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
   set(DEPS        PyPeriodicFMM)
   set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/dummy")
-
-  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(LIB_EXTENSION "dylib")
-  else ()
-    set(LIB_EXTENSION "so")
-  endif ()
 
   configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
