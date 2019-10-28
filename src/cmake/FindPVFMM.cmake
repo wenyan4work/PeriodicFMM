@@ -16,6 +16,7 @@ find_path(PVFMM_INCLUDE_DIR
   PATHS
     $ENV{HOME}/local/include/pvfmm
     $ENV{CONDA_PREFIX}/include/pvfmm
+    $ENV{PVFMM_PREFIX}/include/pvfmm
     $ENV{CPATH}/pvfmm
     $ENV{C_INCLUDE_PATH}/pvfmm
     $ENV{CPLUS_INCLUDE_PATH}/pvfmm
@@ -32,7 +33,7 @@ find_library(PVFMM_LIBRARIES
   NAMES pvfmm
   PATHS
     $ENV{HOME}/local/lib/pvfmm
-    $ENV{CONDA_PREFIX}/lib/pvfmm
+    $ENV{PVFMM_PREFIX}/lib/pvfmm
     $ENV{CONDA_PREFIX}/lib/pvfmm
     $ENV{LIBRARY_PATH}/pvfmm
     $ENV{LD_LIBRARY_PATH}/pvfmm
