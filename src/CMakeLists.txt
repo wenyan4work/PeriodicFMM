@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 project(PeriodicFMM VERSION 0.1 LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
@@ -6,12 +6,16 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(MPI_CXX_SKIP_MPICXX true
   CACHE BOOL "If true, the MPI-2 C++ bindings are disabled using definitions.")
+# required compiler features
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
+# library
 find_package(MKL REQUIRED)
 find_package(PVFMM REQUIRED)
 find_package(Eigen3 REQUIRED)
+# requried by python interface
 find_package(Boost REQUIRED COMPONENTS python numpy)
+find_package(PythonInterp 3 REQUIRED)
 find_package(PythonLibs 3 REQUIRED)
 
 include_directories("FMM/include"

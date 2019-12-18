@@ -35,6 +35,7 @@ target_link_libraries(StokesFMM3D
   )
 
 target_compile_options(StokesFMM3D PUBLIC "-DPVFMM_FFTW3_MKL")
+target_compile_options(StokesFMM3D PUBLIC ${OpenMP_CXX_FLAGS})
 
 install(TARGETS StokesFMM3D
   RUNTIME DESTINATION bin
@@ -55,6 +56,7 @@ target_link_libraries(StokesFMMWall2D
   MPI::MPI_CXX)
 
 target_compile_options(StokesFMMWall2D PUBLIC "-DPVFMM_FFTW3_MKL")
+target_compile_options(StokesFMMWall2D PUBLIC ${OpenMP_CXX_FLAGS})
 
 install(TARGETS StokesFMMWall2D
   RUNTIME DESTINATION bin
