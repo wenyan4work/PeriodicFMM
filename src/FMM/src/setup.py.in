@@ -1,0 +1,9 @@
+from distutils.core import setup
+
+setup(
+    name="PyPeriodicFMM",
+    version="0.1",
+    packages=[""],
+    package_dir={"": "${CMAKE_CURRENT_BINARY_DIR}"},
+    package_data={"": ["PyPeriodicFMM.so"]},
+)
