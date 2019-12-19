@@ -53,4 +53,4 @@ mark_as_advanced(PVFMM_INCLUDE_DIR PVFMM_LIBRARIES)
 # We refrain from creating an imported target since those cannot be exported
 add_library(pvfmm INTERFACE)
 target_link_libraries(pvfmm INTERFACE ${PVFMM_LIBRARIES})
-target_include_directories(pvfmm SYSTEM INTERFACE ${PVFMM_INCLUDE_DIR})
+target_include_directories(pvfmm INTERFACE ${PVFMM_INCLUDE_DIR})
