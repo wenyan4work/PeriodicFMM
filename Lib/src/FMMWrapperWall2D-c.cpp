@@ -1,5 +1,5 @@
-#include <FMM/FMMWrapperWall2D-c.h>
-#include <FMM/FMMWrapperWall2D.hpp>
+#include "FMMWrapperWall2D-c.h"
+#include "FMMWrapperWall2D.hpp"
 
 extern "C" {
 

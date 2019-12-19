@@ -5,8 +5,8 @@
  *      Author: wyan
  */
 
-#include <FMM/FMMWrapper.hpp>
-#include <FMM/StokesRegSingleLayerKernel.hpp>
+#include "FMMWrapper.hpp"
+#include "StokesRegSingleLayerKernel.hpp"
 
 #include <cassert>
 #include <limits>

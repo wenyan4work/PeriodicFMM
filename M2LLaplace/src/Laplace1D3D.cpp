@@ -5,11 +5,13 @@
  *      Author: wyan
  */
 
-#include <iomanip>
-#include <iostream>
+
+#include "SVD_pvfmm.hpp"
 
 #include <Eigen/Dense>
-#include <FMM/SVD_pvfmm.hpp>
+
+#include <iomanip>
+#include <iostream>
 
 #define DIRECTLAYER 2
 #define PI314 (static_cast<double>(3.1415926535897932384626433))

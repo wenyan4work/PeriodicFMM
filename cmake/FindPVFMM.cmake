@@ -1,7 +1,7 @@
 #  Copyright Olivier Parcollet 2010.
 #  Copyright Simons Foundation 2019
 #    Author: Nils Wentzell
-#    Customized for PVFMM by: Robert Blackwell
+#    Customized for PVFMM by: Robert Blackwell, Wen Yan
 
 #  Distributed under the Boost Software License, Version 1.0.
 #      (See accompanying file LICENSE_1_0.txt or copy at

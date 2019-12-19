@@ -9,9 +9,10 @@
 #include <pvfmm.hpp>
 
 namespace pvfmm {
-// TODO: Stokes Reg Force Torque Vel kernel, 7 -> 3
-// TODO: Stokes Reg Force Torque Vel Omega kernel, 7 -> 6
-// TODO: Stokes Force Vel Omega kernel, 3 -> 6
+// TODO: vectorize these kernels
+// Stokes Reg Force Torque Vel kernel, 7 -> 3
+// Stokes Reg Force Torque Vel Omega kernel, 7 -> 6
+// Stokes Force Vel Omega kernel, 3 -> 6
 
 /*********************************************************
  *                                                        *
@@ -176,7 +177,7 @@ void stokes_regvel(T *r_src, int src_cnt, T *v_src, int dof, T *r_trg,
 
 /**********************************************************
  *                                                        *
- *     Stokes Reg Vel kernel, source: 7, target: 3        *
+ * Stokes Reg Force Torque Vel kernel,source: 7, target: 3*
  *       fx,fy,fz,tx,ty,tz,eps -> ux,uy,uz                *
  **********************************************************/
 template <class T, int newton_iter = 0>
@@ -237,7 +238,7 @@ void stokes_regftvel(T *r_src, int src_cnt, T *v_src, int dof, T *r_trg,
 
 /**********************************************************
  *                                                        *
- *   Stokes Reg Vel Rot kernel, source: 7, target: 6      *
+ *Stokes Reg Force Torque Vel Omega kernel, source: 7, target: 6*
  *    fx,fy,fz,tx,ty,tz,eps -> ux,uy,uz, wx,wy,wz         *
  **********************************************************/
 template <class T, int newton_iter = 0>
@@ -312,7 +313,7 @@ void stokes_regftvelomega(T *r_src, int src_cnt, T *v_src, int dof, T *r_trg,
 
 /**********************************************************
  *                                                         *
- *   Stokes sing Vel Rot kernel, source: 3, target: 6      *
+ *   Stokes Force Vel Omega kernel, source: 3, target: 6   *
  *           fx,fy,fz -> ux,uy,uz, wx,wy,wz                *
  **********************************************************/
 template <class T, int newton_iter = 0>

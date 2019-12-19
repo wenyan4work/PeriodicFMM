@@ -4,8 +4,8 @@
 
 #include <mpi.h>
 
-#include <FMM/FMMWrapper-c.h>
-#include <FMM/FMMWrapperWall2D-c.h>
+#include <PeriodicFMM/FMMWrapper-c.h>
+#include <PeriodicFMM/FMMWrapperWall2D-c.h>
 
 int main(int argc, char** argv) {
     MPI_Init(&argc,&argv);
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
     // FMM_Wrapper
     // Evaluate, clear, and Evaluate again
     {
-        FMM_Wrapper *fmm = create_fmm_wrapper(8, 2000, 0, 7, 0);
+        FMM_Wrapper *fmm = create_fmm_wrapper(12, 2000, 0, 7, 0);
         FMM_SetBox(fmm, 0, 1, 0, 1, 0, 1);
         FMM_UpdateTree(fmm, trgCoord, srcCoord, ntrg, nsrc);
         FMM_Evaluate(fmm, trgValue, srcValue, ntrg, nsrc);
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
             trgCoord[3 * i + 2] *=0.499;
         }
 
-        FMM_WrapperWall2D *fmm = create_fmm_wrapperwall2d(8, 2000, 0, 4);
+        FMM_WrapperWall2D *fmm = create_fmm_wrapperwall2d(12, 2000, 0, 4);
         FMMWall2D_SetBox(fmm, 0, 1, 0, 1, 0, 0.4999);
         FMMWall2D_UpdateTree(fmm, trgCoord, srcCoord, ntrg, nsrc);
         FMMWall2D_Evaluate(fmm, trgValue, srcValue, ntrg, nsrc);
@@ -83,6 +83,6 @@ int main(int argc, char** argv) {
     free(srcValue);
     free(trgValue);
 
-    // MPI_Finalize();
+    MPI_Finalize();
     return 0;
 }

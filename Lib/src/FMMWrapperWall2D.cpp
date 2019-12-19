@@ -5,8 +5,8 @@
  *      Author: wyan
  */
 
-#include <FMM/FMMWrapperWall2D.hpp>
-#include <FMM/LaplaceLayerKernel.hpp>
+#include "FMMWrapperWall2D.hpp"
+#include "LaplaceLayerKernel.hpp"
 
 #include <cassert>
 #include <limits>
