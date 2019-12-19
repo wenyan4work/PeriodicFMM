@@ -9,10 +9,9 @@ set(PeriodicFMM_SOURCES
 
 set(PeriodicFMM_PYTHON_SOURCE src/FMMWrapper-py.cpp)
 
-add_library(objFMM OBJECT ${PeriodicFMM_SOURCES})
+add_library(objFMM OBJECT src/FMMWrapper.cpp src/FMMWrapperWall2D.cpp)
 set_property(TARGET objFMM PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_compile_options(objFMM PUBLIC ${OpenMP_CXX_FLAGS})
-# target_link_libraries(objFMM pvfmm OpenMP::OpenMP_CXX MPI::MPI_CXX)
 
 add_library(PeriodicFMM SHARED $<TARGET_OBJECTS:objFMM>)
 target_link_libraries(PeriodicFMM
@@ -39,12 +38,12 @@ include/FMM/Timer.hpp;\
 include/FMM/cmdparser.hpp")
 
 add_library(PeriodicFMM_static STATIC $<TARGET_OBJECTS:objFMM>)
-target_link_libraries(PeriodicFMM_static
-  pvfmm
-  mkl_rt
-  OpenMP::OpenMP_CXX
-  MPI::MPI_CXX
-  )
+# target_link_libraries(PeriodicFMM_static
+#   pvfmm
+#   mkl_rt
+#   OpenMP::OpenMP_CXX
+#   MPI::MPI_CXX
+#   )
 target_compile_options(PeriodicFMM_static PUBLIC ${OpenMP_CXX_FLAGS})
 
 add_library(PyPeriodicFMM SHARED ${PeriodicFMM_PYTHON_SOURCE})
@@ -56,7 +55,7 @@ target_link_libraries(PyPeriodicFMM
   pvfmm
   Boost::numpy
   )
-target_compile_options(PeriodicFMM PUBLIC ${OpenMP_CXX_FLAGS})
+target_compile_options(PyPeriodicFMM PUBLIC ${OpenMP_CXX_FLAGS})
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_options(PyPeriodicFMM PUBLIC -flat_namespace -undefined suppress)

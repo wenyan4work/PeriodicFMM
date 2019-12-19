@@ -1,5 +1,5 @@
-#ifndef STOKESREGSINGLELAYER_HPP
-#define STOKESREGSINGLELAYER_HPP
+#ifndef STOKESREGSINGLELAYER_HPP_
+#define STOKESREGSINGLELAYER_HPP_
 
 #include <cmath>
 #include <cstdlib>

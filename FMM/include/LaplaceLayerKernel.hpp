@@ -1,5 +1,5 @@
-#ifndef LAPLACELAYERKERNEL_H_
-#define LAPLACELAYERKERNEL_H_
+#ifndef LAPLACELAYERKERNEL_HPP_
+#define LAPLACELAYERKERNEL_HPP_
 
 #include <cmath>
 #include <cstdlib>
