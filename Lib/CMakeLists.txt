@@ -20,8 +20,7 @@ install(
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-# part 2, python interface
-# PVFMM should be compiled with -fPIC 
+# part 2, python interface PVFMM should be compiled with -fPIC
 
 if(PyInterface)
   add_library(PyPeriodicFMM SHARED src/Interface-py.cpp)
