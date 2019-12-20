@@ -30,6 +30,14 @@ PYBIND11_MODULE(PyPeriodicFMM, m) {
         .def("FMM_Evaluate", &FMM_Wrapper::FMM_Evaluate)
         .def("FMM_TreeClear", &FMM_Wrapper::FMM_TreeClear)
         .def("FMM_DataClear", &FMM_Wrapper::FMM_DataClear);
+
+    py::class_<FMM_WrapperWall2D>(m, "FMM_WrapperWall2D")
+        .def(py::init<int, int, int, FMM_WrapperWall2D::PAXIS>())
+        .def("FMM_SetBox", &FMM_WrapperWall2D::FMM_SetBox)
+        .def("FMM_UpdateTree", &FMM_WrapperWall2D::FMM_UpdateTree)
+        .def("FMM_Evaluate", &FMM_WrapperWall2D::FMM_Evaluate)
+        .def("FMM_TreeClear", &FMM_WrapperWall2D::FMM_TreeClear)
+        .def("FMM_DataClear", &FMM_WrapperWall2D::FMM_DataClear);
 }
 
 // void FMM_SetBox(FMM_Wrapper *fmm, double xlow, double xhigh, double ylow,

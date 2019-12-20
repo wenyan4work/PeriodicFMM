@@ -21,21 +21,24 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # part 2, python interface
-add_library(PyPeriodicFMM SHARED src/Interface-py.cpp)
-set_target_properties(PyPeriodicFMM PROPERTIES PREFIX "" SUFFIX ".so")
-target_include_directories(
-  PyPeriodicFMM
-  PUBLIC $<INSTALL_INTERFACE:include>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
-         ${PVFMM_INCLUDE_DIR} ${MKL_INCLUDE_DIRS}
-  PRIVATE ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-target_compile_definitions(PyPeriodicFMM PUBLIC "PVFMM_FFTW3_MKL")
-target_compile_options(PyPeriodicFMM PUBLIC ${OpenMP_CXX_FLAGS}
-                                            ${MPI_CXX_INCLUDE_DIRS})
-target_link_libraries(
-  PyPeriodicFMM PUBLIC PeriodicFMM ${pybind11_LIBRARIES} ${PVFMM_LIBRARIES}
-                       OpenMP::OpenMP_CXX ${MKL_LIBRARIES})
+# TODO: this is not working yet
 
+if(PyInterface)
+  add_library(PyPeriodicFMM SHARED src/Interface-py.cpp)
+  set_target_properties(PyPeriodicFMM PROPERTIES PREFIX "" SUFFIX ".so")
+  target_include_directories(
+    PyPeriodicFMM
+    PUBLIC $<INSTALL_INTERFACE:include>
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+           ${PVFMM_INCLUDE_DIR} ${MKL_INCLUDE_DIRS}
+    PRIVATE ${PYTHON_INCLUDE_DIRS})
+  target_compile_definitions(PyPeriodicFMM PUBLIC "PVFMM_FFTW3_MKL")
+  target_compile_options(PyPeriodicFMM PUBLIC ${OpenMP_CXX_FLAGS}
+                                              ${MPI_CXX_INCLUDE_DIRS})
+  target_link_libraries(
+    PyPeriodicFMM PUBLIC PeriodicFMM ${pybind11_LIBRARIES} ${PVFMM_LIBRARIES}
+                         OpenMP::OpenMP_CXX ${MKL_LIBRARIES})
+endif()
 # set(PeriodicFMM_PYTHON_SOURCE src/FMMWrapper-py.cpp)
 
 # add_library(objFMM OBJECT src/FMMWrapper.cpp src/FMMWrapperWall2D.cpp)
