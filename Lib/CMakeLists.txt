@@ -9,16 +9,12 @@ src/FMMWrapperWall2D-c.cpp
 target_include_directories(PeriodicFMM
     PUBLIC 
         $<INSTALL_INTERFACE:include>    
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/PeriodicFMM>
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+        ${PVFMM_INCLUDE_DIR} 
+        ${MKL_INCLUDE_DIRS}
 )
-
 target_compile_definitions(PeriodicFMM PUBLIC "PVFMM_FFTW3_MKL")
-target_compile_options(PeriodicFMM PUBLIC ${PVFMM})
-target_include_directories(PeriodicFMM PUBLIC ${PVFMM_INCLUDE_DIR})
-target_link_libraries(PeriodicFMM PUBLIC mkl_rt OpenMP::OpenMP_CXX MPI::MPI_CXX)
-
+target_compile_options(PeriodicFMM PUBLIC ${PVFMM} ${OpenMP_CXX_FLAGS} ${MPI_CXX_INCLUDE_DIRS})
 
 # install library and headers
 include(GNUInstallDirs)
@@ -29,15 +25,15 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # part 2, python interface
-add_library(PyPeriodicFMM SHARED 
-src/Interface-py.cpp 
-)
-target_compile_definitions(PyPeriodicFMM PUBLIC "PVFMM_FFTW3_MKL")
-target_compile_options(PyPeriodicFMM PUBLIC ${PVFMM})
-target_include_directories(PyPeriodicFMM PUBLIC ${PVFMM_INCLUDE_DIR} 
-${PROJECT_SOURCE_DIR}/src ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-target_link_libraries(PyPeriodicFMM PUBLIC PeriodicFMM pvfmm mkl_rt OpenMP::OpenMP_CXX MPI::MPI_CXX)
-set_target_properties(PyPeriodicFMM PROPERTIES PREFIX "" SUFFIX ".so")
+# add_library(PyPeriodicFMM SHARED 
+# src/Interface-py.cpp 
+# )
+# target_compile_definitions(PyPeriodicFMM PUBLIC "PVFMM_FFTW3_MKL")
+# target_compile_options(PyPeriodicFMM PUBLIC ${PVFMM})
+# target_include_directories(PyPeriodicFMM PUBLIC ${PVFMM_INCLUDE_DIR} 
+# ${PROJECT_SOURCE_DIR}/src ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+# target_link_libraries(PyPeriodicFMM PUBLIC PeriodicFMM pvfmm mkl_rt OpenMP::OpenMP_CXX MPI::MPI_CXX)
+# set_target_properties(PyPeriodicFMM PROPERTIES PREFIX "" SUFFIX ".so")
 
 
 # set(PeriodicFMM_PYTHON_SOURCE src/FMMWrapper-py.cpp)

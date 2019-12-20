@@ -1,12 +1,14 @@
-
-add_executable(Example_C   C/main.c)
+add_executable(Example_C  C/main.c)
+target_compile_definitions(Example_C PRIVATE "PVFMM_FFTW3_MKL")
 target_include_directories(Example_C PRIVATE ${CMAKE_SOURCE_DIR}/Lib/include)
-target_link_libraries(Example_C 
+target_link_libraries(Example_C  
   PeriodicFMM
-  pvfmm
-  mkl_rt
+  ${PVFMM_LIBRARIES}
+  ${MKL_LIBRARIES}
+  stdc++ m
   OpenMP::OpenMP_C
-  MPI::MPI_CXX)
+  MPI::MPI_C
+  )
 add_test(NAME Example_C COMMAND mpirun -n 4 Example_C)
 # set_tests_properties(TpetraUtil PROPERTIES
 #   PASS_REGULAR_EXPRESSION "TestPassed;All ok"
