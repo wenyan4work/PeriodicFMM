@@ -1,5 +1,5 @@
-#include "FMMWrapper-c.h"
-#include "FMMWrapper.hpp"
+#include "PeriodicFMM/FMMWrapper-c.h"
+#include "PeriodicFMM/FMMWrapper.hpp"
 
 extern "C" {
 

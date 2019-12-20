@@ -384,7 +384,8 @@ void stokes_velomega(T *r_src, int src_cnt, T *v_src, int dof, T *r_trg,
     }
 }
 
-template <class T> struct StokesRegKernel {
+template <class T>
+struct StokesRegKernel {
     inline static const Kernel<T> &Vel();        //   3+1->3
     inline static const Kernel<T> &FTVelOmega(); //   3+3+1->3+3
   private:
@@ -393,7 +394,8 @@ template <class T> struct StokesRegKernel {
 
 // 1 newton for float, 2 newton for double
 // the string for stk_ker must be exactly the same as in kernel.txx of pvfmm
-template <class T> inline const Kernel<T> &StokesRegKernel<T>::Vel() {
+template <class T>
+inline const Kernel<T> &StokesRegKernel<T>::Vel() {
     static Kernel<T> stk_ker = StokesKernel<T>::velocity();
     static Kernel<T> s2t_ker = BuildKernel<T, stokes_regvel<T, NEWTON_ITE>>(
         "stokes_regvel", 3, std::pair<int, int>(4, 3), NULL, NULL, NULL,
@@ -402,7 +404,8 @@ template <class T> inline const Kernel<T> &StokesRegKernel<T>::Vel() {
     return s2t_ker;
 }
 
-template <class T> inline const Kernel<T> &StokesRegKernel<T>::FTVelOmega() {
+template <class T>
+inline const Kernel<T> &StokesRegKernel<T>::FTVelOmega() {
     static Kernel<T> stk_ker = StokesKernel<T>::velocity();
     static Kernel<T> stk_velomega =
         BuildKernel<T, stokes_velomega<T, NEWTON_ITE>>(

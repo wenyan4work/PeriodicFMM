@@ -7,11 +7,11 @@
 #include <PeriodicFMM/FMMWrapper-c.h>
 #include <PeriodicFMM/FMMWrapperWall2D-c.h>
 
-int main(int argc, char** argv) {
-    MPI_Init(&argc,&argv);
-    int rank=0,size=0;
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&size);
+int main(int argc, char **argv) {
+    MPI_Init(&argc, &argv);
+    int rank = 0, size = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     const int nsrc = 16384;
     const int ntrg = 16384;
@@ -21,24 +21,26 @@ int main(int argc, char** argv) {
     double *trgCoord = malloc(sizeof(double) * 3 * ntrg);
     double *trgValue = malloc(sizeof(double) * 3 * ntrg);
 
-    // some arbitrary data
+// some arbitrary data
+#pragma omp parallel for
     for (int i = 0; i < nsrc; i++) {
-        int seed = rank*nsrc+i;
+        int seed = rank * nsrc + i;
         srcCoord[3 * i] = fabs(sin(seed));
         srcCoord[3 * i + 1] = fabs(cos(seed));
-        srcCoord[3 * i + 2] = fabs(sin(seed*seed));
+        srcCoord[3 * i + 2] = fabs(sin(seed * seed));
 
         srcValue[3 * i] = sin(seed);
         srcValue[3 * i + 1] = sin(sin(seed));
         srcValue[3 * i + 2] = cos(sin(seed));
     }
 
+#pragma omp parallel for
     for (int i = 0; i < ntrg; i++) {
-        int seed = rank*nsrc+i;
+        int seed = rank * nsrc + i;
 
         trgCoord[3 * i] = fabs(cos(seed));
         trgCoord[3 * i + 1] = fabs(sin(seed));
-        trgCoord[3 * i + 2] = fabs(cos(seed*seed));
+        trgCoord[3 * i + 2] = fabs(cos(seed * seed));
 
         trgValue[3 * i] = 0;
         trgValue[3 * i + 1] = 0;
@@ -62,11 +64,13 @@ int main(int argc, char** argv) {
     // FMM_WrapperWall2D
     // Evaluate, clear, and Evaluate again
     {
+#pragma omp parallel for
         for (int i = 0; i < nsrc; i++) {
-            srcCoord[3 * i + 2] *=0.499;
+            srcCoord[3 * i + 2] *= 0.499;
         }
+#pragma omp parallel for
         for (int i = 0; i < ntrg; i++) {
-            trgCoord[3 * i + 2] *=0.499;
+            trgCoord[3 * i + 2] *= 0.499;
         }
 
         FMM_WrapperWall2D *fmm = create_fmm_wrapperwall2d(12, 2000, 0, 4);

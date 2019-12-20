@@ -63,10 +63,8 @@ class Timer {
     }
 
     double getTime() {
-        return std::chrono::duration_cast<std::chrono::microseconds>(stopTime -
-                                                                     startTime)
-                   .count() /
-               1e6;
+        using namespace std::chrono;
+        return duration_cast<microseconds>(stopTime - startTime).count() / 1e6;
     }
 
     void dump() {

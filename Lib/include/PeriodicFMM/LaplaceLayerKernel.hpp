@@ -451,7 +451,8 @@ void laplace_dipolepgrad_poten(T *r_src, int src_cnt, T *v_src, int dof,
 #undef LAPLACE_KERNEL
 }
 
-template <class T> struct LaplaceLayerKernel {
+template <class T>
+struct LaplaceLayerKernel {
     inline static const Kernel<T> &PGrad();
 
   private:
@@ -459,7 +460,8 @@ template <class T> struct LaplaceLayerKernel {
     // generate NEWTON_ITE at compile time. 1 for float and 2 for double
 };
 
-template <class T> inline const Kernel<T> &LaplaceLayerKernel<T>::PGrad() {
+template <class T>
+inline const Kernel<T> &LaplaceLayerKernel<T>::PGrad() {
     // S2U - single-layer density — to — potential kernel (1 x 1)
     // D2U - double-layer density — to — potential kernel (1+3 x 1)
     // S2UdU - single-layer density — to — potential & gradient (1+3 x 1)

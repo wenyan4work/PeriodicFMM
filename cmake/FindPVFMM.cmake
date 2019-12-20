@@ -47,10 +47,12 @@ find_library(PVFMM_LIBRARIES
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(PVFMM DEFAULT_MSG PVFMM_LIBRARIES PVFMM_INCLUDE_DIR)
 
-mark_as_advanced(PVFMM_INCLUDE_DIR PVFMM_LIBRARIES)
+# mark_as_advanced(PVFMM_INCLUDE_DIR PVFMM_LIBRARIES)
 
 # Interface target
 # We refrain from creating an imported target since those cannot be exported
-add_library(pvfmm INTERFACE)
-target_link_libraries(pvfmm INTERFACE ${PVFMM_LIBRARIES})
-target_include_directories(pvfmm INTERFACE ${PVFMM_INCLUDE_DIR})
+
+# this may cause wrong order of linked libraries in link line
+# add_library(pvfmm INTERFACE)
+# target_link_libraries(pvfmm INTERFACE ${PVFMM_LIBRARIES})
+# target_include_directories(pvfmm INTERFACE ${PVFMM_INCLUDE_DIR})

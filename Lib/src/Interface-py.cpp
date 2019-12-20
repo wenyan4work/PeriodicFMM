@@ -1,5 +1,5 @@
-#include "FMMWrapper.hpp"
-#include "FMMWrapperWall2D.hpp"
+#include "PeriodicFMM/FMMWrapper.hpp"
+#include "PeriodicFMM/FMMWrapperWall2D.hpp"
 
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
