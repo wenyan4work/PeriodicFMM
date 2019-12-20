@@ -5,19 +5,18 @@
  *      Author: wyan
  */
 
-#include <FMM/FMMWrapperWall2D.hpp>
+#include "ChebNodal.hpp"
+#include "cmdparser.hpp"
 
-#include "ChebNodal.h"
+#include "FMMWrapperWall2D.hpp"
 
 #include <chrono>
 #include <iostream>
 #include <random>
 #include <vector>
 
+#include <Eigen/Dense>
 #include <mpi.h>
-
-#include <FMM/EigenDef.hpp>
-#include <FMM/cmdparser.hpp>
 
 #define EPS (1e-12) // make sure EPS/10 is still valid
 #define MAXP 16

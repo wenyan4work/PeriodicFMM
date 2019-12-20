@@ -5,11 +5,12 @@
  *      Author: wyan
  */
 
-#include "ChebNodal.h"
+#include "ChebNodal.hpp"
 #include "Ewald.hpp"
+#include "cmdparser.hpp"
 #include "regularized_stokeslet.hpp"
-#include <FMM/FMMWrapper.hpp>
-#include <FMM/cmdparser.hpp>
+
+#include "FMMWrapper.hpp"
 
 #include <chrono>
 #include <iostream>

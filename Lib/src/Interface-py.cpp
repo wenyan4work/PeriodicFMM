@@ -23,21 +23,36 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(PyPeriodicFMM, m) {
-    py::class_<FMM_Wrapper>(m, "FMM_Wrapper")
-        .def(py::init<int, int, int, FMM_Wrapper::PAXIS, bool>())
+    py::class_<FMM_Wrapper> FMM_Wrapper(m, "FMM_Wrapper");
+
+    FMM_Wrapper.def(py::init<int, int, int, FMM_Wrapper::PAXIS, bool>())
         .def("FMM_SetBox", &FMM_Wrapper::FMM_SetBox)
         .def("FMM_UpdateTree", &FMM_Wrapper::FMM_UpdateTree)
         .def("FMM_Evaluate", &FMM_Wrapper::FMM_Evaluate)
         .def("FMM_TreeClear", &FMM_Wrapper::FMM_TreeClear)
         .def("FMM_DataClear", &FMM_Wrapper::FMM_DataClear);
 
-    py::class_<FMM_WrapperWall2D>(m, "FMM_WrapperWall2D")
-        .def(py::init<int, int, int, FMM_WrapperWall2D::PAXIS>())
+    py::enum_<FMM_Wrapper::PAXIS>(FMM_Wrapper, "PAXIS")
+        .value("NONE", FMM_Wrapper::PAXIS::NONE)
+        .value("PX", FMM_Wrapper::PAXIS::PX)
+        .value("PXY", FMM_Wrapper::PAXIS::PXY)
+        .value("PXYZ", FMM_Wrapper::PAXIS::PXYZ)
+        .export_values();
+
+    py::class_<FMM_WrapperWall2D> FMM_WrapperWall2D(m, "FMM_WrapperWall2D");
+
+    FMM_WrapperWall2D.def(py::init<int, int, int, FMM_WrapperWall2D::PAXIS>())
         .def("FMM_SetBox", &FMM_WrapperWall2D::FMM_SetBox)
         .def("FMM_UpdateTree", &FMM_WrapperWall2D::FMM_UpdateTree)
         .def("FMM_Evaluate", &FMM_WrapperWall2D::FMM_Evaluate)
         .def("FMM_TreeClear", &FMM_WrapperWall2D::FMM_TreeClear)
         .def("FMM_DataClear", &FMM_WrapperWall2D::FMM_DataClear);
+
+    py::enum_<FMM_WrapperWall2D::PAXIS>(FMM_WrapperWall2D, "PAXIS")
+        .value("NONE", FMM_WrapperWall2D::PAXIS::NONE)
+        .value("PX", FMM_WrapperWall2D::PAXIS::PX)
+        .value("PXY", FMM_WrapperWall2D::PAXIS::PXY)
+        .export_values();
 }
 
 // void FMM_SetBox(FMM_Wrapper *fmm, double xlow, double xhigh, double ylow,
