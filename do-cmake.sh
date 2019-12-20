@@ -9,3 +9,8 @@ cmake \
   -D Eigen3_DIR="${USER_LOCAL}/share/eigen3/cmake" \
   -D CMAKE_INSTALL_PREFIX=${USER_LOCAL} \
 ../
+
+#  -D Boost_NO_SYSTEM_PATHS=ON \
+#  -D BOOST_ROOT=${HOME}/miniconda3/envs/py3/ \
+#  -D BOOST_INCLUDEDIR=${HOME}/miniconda3/envs/py3/include \
+#  -D BOOST_LIBRARYDIR=${HOME}/miniconda3/envs/py3/lib \
