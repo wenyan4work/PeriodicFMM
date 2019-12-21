@@ -39,5 +39,5 @@ enable_testing()
 
 add_subdirectory(Lib)
 add_subdirectory(Examples)
-# add_subdirectory(M2LStokes)
-# add_subdirectory(M2LLaplace)
+add_subdirectory(M2LStokes)
+add_subdirectory(M2LLaplace)

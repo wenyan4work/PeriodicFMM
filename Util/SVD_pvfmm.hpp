@@ -10,6 +10,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <iostream>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -441,9 +442,8 @@ inline void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA, T *S,
                 A1(j, i) = A[j + i * lda];
             }
         S1.setZero();
-        for (size_t i = 0; i < dim[1];
-             i++) { // Set S
-                    //			S1[i][i] = S[i];
+        for (size_t i = 0; i < dim[1]; i++) { // Set S
+                                              //			S1[i][i] = S[i];
             S1(i, i) = S[i];
         }
         for (size_t i = 0; i < dim[1]; i++)
@@ -460,7 +460,8 @@ inline void svd(char *JOBU, char *JOBVT, int *M, int *N, T *A, int *LDA, T *S,
     }
 }
 
-template <class T> void pinv_pvfmm(T *M, int n1, int n2, T eps, T *M_) {
+template <class T>
+void pinv_pvfmm(T *M, int n1, int n2, T eps, T *M_) {
     if (n1 * n2 == 0)
         return;
     int m = n2;
