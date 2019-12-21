@@ -10,7 +10,7 @@
 #include "cmdparser.hpp"
 #include "regularized_stokeslet.hpp"
 
-#include "FMMWrapper.hpp"
+#include "PeriodicFMM/FMMWrapper.hpp"
 
 #include <chrono>
 #include <iostream>

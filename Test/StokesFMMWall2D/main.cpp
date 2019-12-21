@@ -8,7 +8,7 @@
 #include "ChebNodal.hpp"
 #include "cmdparser.hpp"
 
-#include "FMMWrapperWall2D.hpp"
+#include "PeriodicFMM/FMMWrapperWall2D.hpp"
 
 #include <chrono>
 #include <iostream>
