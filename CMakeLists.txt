@@ -16,6 +16,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   # using GCC
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  # using intel
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qno-offload")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qno-offload")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -34,20 +35,9 @@ find_package(PVFMM REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(MKL REQUIRED)
 
-# requried by python interface
-# find_package(Boost 1.67 REQUIRED COMPONENTS python numpy)
-find_package(PythonInterp 3 REQUIRED)
-find_package(PythonLibs 3 REQUIRED)
-find_package(pybind11 REQUIRED)
-
-message("Python Includes: " ${PYTHON_INCLUDE_DIRS})
-message("Python Libs: " ${PYTHON_LIBRARIES})
-# if (DEFINED ENV{CONDA_PREFIX}) message("Including conda paths")
-# set(CONDA_PREFIX ENV{CONDA_PREFIX}) include_directories(SYSTEM
-# "$ENV{CONDA_PREFIX}/include") endif()
-
 enable_testing()
 
 add_subdirectory(Lib)
 add_subdirectory(Examples)
-# add_subdirectory(M2LStokes) add_subdirectory(M2LLaplace)
+# add_subdirectory(M2LStokes)
+# add_subdirectory(M2LLaplace)
