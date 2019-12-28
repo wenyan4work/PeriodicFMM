@@ -24,7 +24,7 @@ if(PyInterface)
   target_compile_options(PyPeriodicFMM PUBLIC ${OpenMP_CXX_FLAGS}
                                               ${MPI_CXX_INCLUDE_DIRS})
   target_link_libraries(
-    PyPeriodicFMM PUBLIC PeriodicFMM ${pybind11_LIBRARIES} ${PVFMM_LIBRARIES}
+    PyPeriodicFMM PUBLIC PeriodicFMM ${pybind11_LIBRARIES} ${PVFMM_SHARED_LIBRARY}
                          OpenMP::OpenMP_CXX ${MKL_LIBRARIES})
 
   # add example.py as

@@ -4,7 +4,7 @@ target_include_directories(Example_C PRIVATE ${CMAKE_SOURCE_DIR}/Lib/include)
 target_link_libraries(
   Example_C
   PRIVATE PeriodicFMM
-          ${PVFMM_LIBRARIES}
+          ${PVFMM_STATIC_LIBRARY}
           ${MKL_LIBRARIES}
           stdc++
           m
