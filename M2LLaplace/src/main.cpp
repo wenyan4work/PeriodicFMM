@@ -9,6 +9,10 @@ namespace Laplace2D3D {
 int main(int argc, char *argv[]);
 }
 
+namespace Laplace3D3D {
+int main(int argc, char *argv[]);
+}
+
 namespace Laplace1D3DDipole {
 int main(int argc, char *argv[]);
 }
@@ -63,6 +67,9 @@ int main(int argc, char *argv[]) {
             break;
         case 2:
             Laplace2D3D::main(argc, argv);
+            break;
+        case 3:
+            Laplace3D3D::main(argc, argv);
             break;
         default:
             std::cerr << "Dimension {" << dim
