@@ -31,9 +31,8 @@ set(MPI_CXX_SKIP_MPICXX
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
 # library
-find_package(PVFMM REQUIRED)
+find_package(pvfmm REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(MKL REQUIRED)
 
 enable_testing()
 

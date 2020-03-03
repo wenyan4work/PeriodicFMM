@@ -18,14 +18,12 @@ if(PyInterface)
     PyPeriodicFMM
     PUBLIC $<INSTALL_INTERFACE:include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
-           ${PVFMM_INCLUDE_DIR} ${MKL_INCLUDE_DIRS}
     PRIVATE ${PYTHON_INCLUDE_DIRS})
   target_compile_definitions(PyPeriodicFMM PUBLIC "PVFMM_FFTW3_MKL")
   target_compile_options(PyPeriodicFMM PUBLIC ${OpenMP_CXX_FLAGS}
                                               ${MPI_CXX_INCLUDE_DIRS})
-  target_link_libraries(
-    PyPeriodicFMM PUBLIC PeriodicFMM ${pybind11_LIBRARIES} ${PVFMM_SHARED_LIBRARY}
-                         OpenMP::OpenMP_CXX ${MKL_LIBRARIES})
+  target_link_libraries(PyPeriodicFMM PUBLIC PeriodicFMM ${pybind11_LIBRARIES}
+                                             OpenMP::OpenMP_CXX MPI::MPI_CXX)
 
   # add example.py as
   add_custom_command(

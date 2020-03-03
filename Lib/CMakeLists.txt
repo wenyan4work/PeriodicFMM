@@ -6,10 +6,10 @@ target_include_directories(
   PeriodicFMM
   PUBLIC $<INSTALL_INTERFACE:include>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
-         ${PVFMM_INCLUDE_DIR} ${MKL_INCLUDE_DIRS})
-target_compile_definitions(PeriodicFMM PUBLIC "PVFMM_FFTW3_MKL")
-target_compile_options(PeriodicFMM PUBLIC ${OpenMP_CXX_FLAGS}
-                                          ${MPI_CXX_INCLUDE_DIRS})
+         ${PVFMM_INCLUDE_DIR}/pvfmm ${PVFMM_DEP_INCLUDE_DIR})
+target_link_libraries(
+  PeriodicFMM PUBLIC ${PVFMM_LIB_DIR}/${PVFMM_SHARED_LIB} ${PVFMM_DEP_LIB}
+                     OpenMP::OpenMP_CXX MPI::MPI_CXX)
 
 # install core library and headers
 include(GNUInstallDirs)

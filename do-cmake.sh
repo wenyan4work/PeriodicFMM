@@ -8,7 +8,7 @@ cmake \
   -D CMAKE_C_COMPILER=mpicc \
   -D Eigen3_DIR="${USER_LOCAL}/share/eigen3/cmake" \
   -D CMAKE_INSTALL_PREFIX=${USER_LOCAL} \
-  -D PyInterface=ON \
+  -D PyInterface=OFF \
 ../
 
 #  -D Boost_NO_SYSTEM_PATHS=ON \
