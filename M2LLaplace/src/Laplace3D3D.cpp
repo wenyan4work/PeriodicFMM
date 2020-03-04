@@ -30,16 +30,14 @@ inline double ERF(double x) { return std::erf(x); }
 inline double realSum(const double xi, const EVec3 &xn, const EVec3 &xm) {
     EVec3 rmn = xm - xn;
     double rnorm = rmn.norm();
-    if (rnorm < 1e-14) {
+    if (rnorm < 1e-10) {
         return 0;
     }
     return ERFC(rnorm * xi) / rnorm;
 }
 
-inline double selfTerm(double xi) { return -2 * xi / sqrt(PI314); }
-
 inline double gKernelEwald(const EVec3 &xm, const EVec3 &xn) {
-    const double xi = 3; // recommend for box=1 to get machine precision
+    const double xi = 2; // recommend for box=1 to get machine precision
     EVec3 target = xm;
     EVec3 source = xn;
     target[0] = target[0] - floor(target[0]); // periodic BC
@@ -50,22 +48,18 @@ inline double gKernelEwald(const EVec3 &xm, const EVec3 &xn) {
     source[2] = source[2] - floor(source[2]);
 
     // real sum
-    int rLim = 5;
+    int rLim = 4;
     double Kreal = 0;
     for (int i = -rLim; i <= rLim; i++) {
         for (int j = -rLim; j <= rLim; j++) {
             for (int k = -rLim; k <= rLim; k++) {
-                EVec3 rmn = target - source + EVec3(i, j, k);
-                if (rmn.norm() < 1e-13) {
-                    continue;
-                }
-                Kreal += realSum(xi, EVec3(0, 0, 0), rmn);
+                Kreal += realSum(xi, target, source + EVec3(i, j, k));
             }
         }
     }
 
     // wave sum
-    int wLim = 5;
+    int wLim = 4;
     double Kwave = 0;
     EVec3 rmn = target - source;
     const double xi2 = xi * xi;
@@ -78,8 +72,8 @@ inline double gKernelEwald(const EVec3 &xm, const EVec3 &xn) {
                 }
                 EVec3 kvec = EVec3(i, j, k) * (2 * PI314);
                 double k2 = kvec.dot(kvec);
-                Kwave += 4 * PI314 * cos(kvec.dot(rmn)) * (1 / k2) *
-                         exp(-k2 / (4 * xi2));
+                Kwave +=
+                    4 * PI314 * cos(kvec.dot(rmn)) * exp(-k2 / (4 * xi2)) / k2;
             }
         }
     }
@@ -92,7 +86,7 @@ inline double gKernelEwald(const EVec3 &xm, const EVec3 &xn) {
 inline double gKernel(const EVec3 &target, const EVec3 &source) {
     EVec3 rst = target - source;
     double rnorm = rst.norm();
-    return rnorm < 1e-14 ? 0 : 1 / rnorm;
+    return rnorm < 1e-10 ? 0 : 1 / rnorm;
 }
 
 // Out of Direct Sum Layer, far field part
@@ -102,7 +96,7 @@ inline double gKernelFF(const EVec3 &target, const EVec3 &source) {
     for (int i = -N; i < N + 1; i++) {
         for (int j = -N; j < N + 1; j++) {
             for (int k = -N; k < N + 1; k++) {
-                double gFree = gKernel(target, source - EVec3(i, j, k));
+                double gFree = gKernel(target, source + EVec3(i, j, k));
                 fEwald -= gFree;
             }
         }
@@ -259,9 +253,9 @@ int main(int argc, char **argv) {
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
         chargePoint(2);
     std::vector<double> chargeValue(2);
-    chargePoint[0] = Eigen::Vector3d(0.5, 0.5, 0.5);
+    chargePoint[0] = Eigen::Vector3d(0.6, 0.6, 0.6);
     chargeValue[0] = -1;
-    chargePoint[1] = Eigen::Vector3d(0, 0, 0);
+    chargePoint[1] = Eigen::Vector3d(0.1, 0.1, 0.1);
     chargeValue[1] = 1;
 
     // solve M
@@ -290,9 +284,10 @@ int main(int argc, char **argv) {
 
     Eigen::VectorXd M2Lsource = M2L * (Msource);
 
-    Eigen::Vector3d samplePoint(0, 0, 0);
+    Eigen::Vector3d samplePoint = chargePoint[0];
     double Usample = 0;
     double UsampleSP = 0;
+    double EwaldFF = 0;
     for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
         for (int j = -DIRECTLAYER; j < 1 + DIRECTLAYER; j++) {
             for (int k = -DIRECTLAYER; k < 1 + DIRECTLAYER; k++) {
@@ -305,6 +300,9 @@ int main(int argc, char **argv) {
         }
     }
 
+    for (size_t p = 0; p < chargePoint.size(); p++) {
+        EwaldFF += gKernelFF(samplePoint, chargePoint[p]) * chargeValue[p];
+    }
     for (int p = 0; p < equivN; p++) {
         Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1],
                                pointLEquiv[3 * p + 2]);
@@ -314,12 +312,17 @@ int main(int argc, char **argv) {
     std::cout << "samplePoint:" << samplePoint.transpose() << std::endl;
     std::cout << "Usample NF:" << Usample << std::endl;
     std::cout << "Usample FF:" << UsampleSP << std::endl;
+    std::cout << "Ewald FF:" << EwaldFF << std::endl;
     std::cout << "Usample FF+NF total:" << UsampleSP + Usample << std::endl;
-    const double p0 = Usample + UsampleSP;
+    const double p0 =
+        gKernelEwald(samplePoint, chargePoint[0]) * chargeValue[0] +
+        gKernelEwald(samplePoint, chargePoint[1]) * chargeValue[1];
+    std::cout << "Ewald " << p0 << std::endl;
 
-    samplePoint = EVec3(0.5, 0.5, 0.5);
+    samplePoint = chargePoint[0] - EVec3(0.001, 0.001, 0.001);
     Usample = 0;
     UsampleSP = 0;
+    EwaldFF = 0;
 
     for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
         for (int j = -DIRECTLAYER; j < 1 + DIRECTLAYER; j++) {
@@ -333,6 +336,9 @@ int main(int argc, char **argv) {
         }
     }
 
+    for (size_t p = 0; p < chargePoint.size(); p++) {
+        EwaldFF += gKernelFF(samplePoint, chargePoint[p]) * chargeValue[p];
+    }
     for (int p = 0; p < equivN; p++) {
         Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1],
                                pointLEquiv[3 * p + 2]);
@@ -342,9 +348,15 @@ int main(int argc, char **argv) {
     std::cout << "samplePoint:" << samplePoint.transpose() << std::endl;
     std::cout << "Usample NF:" << Usample << std::endl;
     std::cout << "Usample FF:" << UsampleSP << std::endl;
+    std::cout << "Ewald FF:" << EwaldFF << std::endl;
     std::cout << "Usample FF+NF total:" << UsampleSP + Usample << std::endl;
-    const double p1 = Usample + UsampleSP;
-    std::cout << "Error : " << p0 + p1 << std::endl;
+    const double p1 =
+        gKernelEwald(samplePoint, chargePoint[0]) * chargeValue[0] +
+        gKernelEwald(samplePoint, chargePoint[1]) * chargeValue[1] -
+        gKernel(samplePoint, chargePoint[0]) * chargeValue[0];
+    std::cout << "Ewald " << p1 << std::endl;
+    std::cout << "Error : " << std::setprecision(16) << p0 + p1 << std::endl;
+    std::cout << "Error : " << std::setprecision(16) << p0 - p1 << std::endl;
 
     return 0;
 }
