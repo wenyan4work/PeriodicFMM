@@ -7,6 +7,8 @@
 
 #include "SVD_pvfmm.hpp"
 
+#include <pvfmm.hpp>
+
 #include <Eigen/Dense>
 
 #include <algorithm>
@@ -14,10 +16,57 @@
 #include <iomanip>
 #include <iostream>
 
+#include <mpi.h>
+
 #define DIRECTLAYER 2
 #define PI314 (static_cast<double>(3.1415926535897932384626433))
 
 namespace Laplace3D3D {
+
+// chebfmm Input function
+void fn_input(const double *coord, int n, double *out) {
+    for (int i = 0; i < n; i++) {
+        out[i] = 1;
+    }
+}
+
+double integrate(const double t[3], double lb = 0, double ub = 1) {
+    double scale = ub - lb;
+    double ts[3] = {(t[0] - lb) / scale, (t[1] - lb) / scale,
+                    (t[2] - lb) / scale};
+    // integrate numerically
+    // Integrate[1/Sqrt[(x-tx)^2+(y-ty)^2+(z-tz)^2],{x,lb,ub},{y,lb,ub},{z,lb,ub}]
+
+    // Set kernel.
+    const pvfmm::Kernel<double> &kernel_fn =
+        pvfmm::LaplaceKernel<double>::potential();
+    // Construct tree.
+    size_t max_pts = 100;
+    std::vector<double> trg_coord(3);
+    trg_coord[0] = ts[0];
+    trg_coord[1] = ts[1];
+    trg_coord[2] = ts[2];
+    int cheb_deg = 6;
+    int mult_order = 6;
+    MPI_Comm comm = MPI_COMM_WORLD;
+    auto *tree =
+        ChebFMM_CreateTree(cheb_deg, kernel_fn.ker_dim[0], fn_input, trg_coord,
+                           comm, 1e-4, max_pts, pvfmm::FreeSpace);
+
+    // Load matrices.
+    pvfmm::ChebFMM<double> matrices;
+    matrices.Initialize(mult_order, cheb_deg, MPI_COMM_WORLD, &kernel_fn);
+
+    // FMM Setup
+    tree->SetupFMM(&matrices);
+
+    // Run FMM
+    size_t n_trg = trg_coord.size() / PVFMM_COORD_DIM;
+    std::vector<double> trg_value(n_trg);
+    pvfmm::ChebFMM_Evaluate(tree, trg_value, n_trg);
+    delete tree;
+    return trg_value[0] * 4 * PI314 * scale*scale;
+}
 
 using EVec3 = Eigen::Vector3d;
 
@@ -53,7 +102,7 @@ inline double gKernelEwald(const EVec3 &xm, const EVec3 &xn) {
     for (int i = -rLim; i <= rLim; i++) {
         for (int j = -rLim; j <= rLim; j++) {
             for (int k = -rLim; k <= rLim; k++) {
-                Kreal += realSum(xi, target, source + EVec3(i, j, k));
+                Kreal += realSum(xi, target, source - EVec3(i, j, k));
             }
         }
     }
@@ -80,7 +129,7 @@ inline double gKernelEwald(const EVec3 &xm, const EVec3 &xn) {
 
     double Kself = rmnnorm < 1e-10 ? -2 * xi / sqrt(PI314) : 0;
 
-    return Kreal + Kwave + Kself;
+    return Kreal + Kwave + Kself - PI314 / xi2;
 }
 
 inline double gKernel(const EVec3 &target, const EVec3 &source) {
@@ -101,6 +150,9 @@ inline double gKernelFF(const EVec3 &target, const EVec3 &source) {
             }
         }
     }
+
+    // add neutralizing background within DIRECTLAYER
+    fEwald -= integrate(target.data(),-N,N+1);
 
     //   {
     //     std::cout << "source:" << source << std::endl
@@ -164,6 +216,42 @@ std::vector<Real_t> surface(int p, Real_t *c, Real_t alpha, int depth) {
 int main(int argc, char **argv) {
     Eigen::initParallel();
     Eigen::setNbThreads(1);
+    MPI_Init(&argc, &argv);
+
+    {
+        double t[3] = {0.2, 0.3, 0.4};
+        std::cout << integrate(t, -3, 4) << std::endl;
+    }
+
+    {
+        EVec3 samplePoint(0.72, 0.7, 0.8);
+        EVec3 chargePoint(0.11, 0.2, 0.3);
+        std::cout << gKernelEwald(chargePoint, chargePoint) << std::endl;
+        std::cout << gKernelEwald(chargePoint + EVec3(0.001, 0, 0),
+                                  chargePoint) -
+                         gKernel(chargePoint + EVec3(0.001, 0, 0), chargePoint)
+                  << std::endl;
+        double pot = gKernelEwald(samplePoint, chargePoint);
+        std::cout << pot << std::endl;
+        double pot1 = pot;
+        const int N = 60;
+#pragma omp parallel for
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                for (int k = 0; k < N; k++) {
+                    EVec3 negPoint(i, j, k);
+                    negPoint *= (1.0 / N);
+                    double p = gKernelEwald(samplePoint, negPoint) *
+                               (-1.0 / pow(N, 3));
+#pragma omp atomic
+                    pot += p;
+                }
+            }
+        }
+        std::cout << pot << std::endl;
+        std::cout << pot - pot1 << std::endl;
+        // std::exit(0);
+    }
 
     std::chrono::high_resolution_clock::time_point t1 =
         std::chrono::high_resolution_clock::now();
@@ -217,7 +305,7 @@ int main(int argc, char **argv) {
     Eigen::MatrixXd ApinvVT(A.cols(), A.rows());
     pinv(A, ApinvU, ApinvVT);
 
-#pragma omp parallel for
+// #pragma omp parallel for
     for (int i = 0; i < equivN; i++) {
         const Eigen::Vector3d Mpoint(pointMEquiv[3 * i], pointMEquiv[3 * i + 1],
                                      pointMEquiv[3 * i + 2]);
@@ -230,9 +318,9 @@ int main(int argc, char **argv) {
                                    pointLCheck[3 * k + 2]);
             //			std::cout<<"debug:"<<k<<std::endl;
             // sum the images
-            f(k) = gKernelFF(Cpoint, Mpoint);
+            f[k] = gKernelFF(Cpoint, Mpoint);
         }
-        //		std::cout << "debug:" << f << std::endl;
+        std::cout << "debug:" << f << std::endl;
 
         M2L.col(i) = (ApinvU.transpose() * (ApinvVT.transpose() * f));
     }
@@ -256,7 +344,7 @@ int main(int argc, char **argv) {
     chargePoint[0] = Eigen::Vector3d(0.6, 0.6, 0.6);
     chargeValue[0] = -1;
     chargePoint[1] = Eigen::Vector3d(0.1, 0.1, 0.1);
-    chargeValue[1] = 1;
+    chargeValue[1] = 1.0;
 
     // solve M
     A.resize(checkN, equivN);
@@ -357,7 +445,7 @@ int main(int argc, char **argv) {
     std::cout << "Ewald " << p1 << std::endl;
     std::cout << "Error : " << std::setprecision(16) << p0 + p1 << std::endl;
     std::cout << "Error : " << std::setprecision(16) << p0 - p1 << std::endl;
-
+    MPI_Finalize();
     return 0;
 }
 
