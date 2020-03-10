@@ -30,42 +30,169 @@ void fn_input(const double *coord, int n, double *out) {
     }
 }
 
-double integrate(const double t[3], double lb = 0, double ub = 1) {
-    double scale = ub - lb;
-    double ts[3] = {(t[0] - lb) / scale, (t[1] - lb) / scale,
-                    (t[2] - lb) / scale};
+enum DistribType { UnifGrid, RandUnif, RandGaus, RandElps, RandSphr };
+
+template <class Real_t>
+std::vector<Real_t> point_distrib(DistribType dist_type, size_t N,
+                                  MPI_Comm comm) {
+    int np, myrank;
+    MPI_Comm_size(comm, &np);
+    MPI_Comm_rank(comm, &myrank);
+    static size_t seed = myrank + 1;
+    seed += np;
+    srand48(seed);
+
+    std::vector<Real_t> coord;
+    switch (dist_type) {
+    case UnifGrid: {
+        size_t NN = (size_t)round(pow((double)N, 1.0 / 3.0));
+        size_t N_total = NN * NN * NN;
+        size_t start = myrank * N_total / np;
+        size_t end = (myrank + 1) * N_total / np;
+        for (size_t i = start; i < end; i++) {
+            coord.push_back(((Real_t)((i / 1) % NN) + 0.5) / NN);
+            coord.push_back(((Real_t)((i / NN) % NN) + 0.5) / NN);
+            coord.push_back(((Real_t)((i / (NN * NN)) % NN) + 0.5) / NN);
+        }
+    } break;
+    case RandUnif: {
+        size_t N_total = N;
+        size_t start = myrank * N_total / np;
+        size_t end = (myrank + 1) * N_total / np;
+        size_t N_local = end - start;
+        coord.resize(N_local * 3);
+
+        for (size_t i = 0; i < N_local * 3; i++)
+            coord[i] = ((Real_t)drand48());
+    } break;
+    case RandGaus: {
+        Real_t e = 2.7182818284590452;
+        Real_t log_e = log(e);
+        size_t N_total = N;
+        size_t start = myrank * N_total / np;
+        size_t end = (myrank + 1) * N_total / np;
+
+        for (size_t i = start * 3; i < end * 3; i++) {
+            Real_t y = -1;
+            while (y <= 0 || y >= 1) {
+                Real_t r1 = sqrt(-2 * log(drand48()) / log_e) *
+                            cos(2 * M_PI * drand48());
+                Real_t r2 = pow(0.5, i * 10 / N_total);
+                y = 0.5 + r1 * r2;
+            }
+            coord.push_back(y);
+        }
+    } break;
+    case RandElps: {
+        size_t N_total = N;
+        size_t start = myrank * N_total / np;
+        size_t end = (myrank + 1) * N_total / np;
+        size_t N_local = end - start;
+        coord.resize(N_local * 3);
+
+        const Real_t r = 0.45;
+        const Real_t center[3] = {0.5, 0.5, 0.5};
+        for (size_t i = 0; i < N_local; i++) {
+            Real_t *y = &coord[i * 3];
+            Real_t phi = 2 * M_PI * drand48();
+            Real_t theta = M_PI * drand48();
+            y[0] = center[0] + 0.25 * r * sin(theta) * cos(phi);
+            y[1] = center[1] + 0.25 * r * sin(theta) * sin(phi);
+            y[2] = center[2] + r * cos(theta);
+        }
+    } break;
+    case RandSphr: {
+        size_t N_total = N;
+        size_t start = myrank * N_total / np;
+        size_t end = (myrank + 1) * N_total / np;
+        size_t N_local = end - start;
+        coord.resize(N_local * 3);
+
+        const Real_t center[3] = {0.5, 0.5, 0.5};
+        for (size_t i = 0; i < N_local; i++) {
+            Real_t *y = &coord[i * 3];
+            Real_t r = 1;
+            while (r > 0.5 || r == 0) {
+                y[0] = drand48();
+                y[1] = drand48();
+                y[2] = drand48();
+                r = sqrt((y[0] - center[0]) * (y[0] - center[0]) +
+                         (y[1] - center[1]) * (y[1] - center[1]) +
+                         (y[2] - center[2]) * (y[2] - center[2]));
+                y[0] = center[0] + 0.45 * (y[0] - center[0]) / r;
+                y[1] = center[1] + 0.45 * (y[1] - center[1]) / r;
+                y[2] = center[2] + 0.45 * (y[2] - center[2]) / r;
+            }
+        }
+    } break;
+    default:
+        break;
+    }
+    return coord;
+}
+
+std::vector<double> integrate(const double *t, const int nt, double lb = 0,
+                              double ub = 1) {
     // integrate numerically
     // Integrate[1/Sqrt[(x-tx)^2+(y-ty)^2+(z-tz)^2],{x,lb,ub},{y,lb,ub},{z,lb,ub}]
+    double scale = ub - lb;
+    std::vector<double> trg_coord(nt * 3);
+    for (int i = 0; i < nt; i++) {
+        trg_coord[3 * i + 0] = (t[3 * i + 0] - lb) / scale;
+        trg_coord[3 * i + 1] = (t[3 * i + 1] - lb) / scale;
+        trg_coord[3 * i + 2] = (t[3 * i + 2] - lb) / scale;
+    }
 
     // Set kernel.
     const pvfmm::Kernel<double> &kernel_fn =
         pvfmm::LaplaceKernel<double>::potential();
+
     // Construct tree.
     size_t max_pts = 100;
-    std::vector<double> trg_coord(3);
-    trg_coord[0] = ts[0];
-    trg_coord[1] = ts[1];
-    trg_coord[2] = ts[2];
-    int cheb_deg = 6;
-    int mult_order = 6;
+    int cheb_deg = 14;
+    int mult_order = 14;
     MPI_Comm comm = MPI_COMM_WORLD;
-    auto *tree =
-        ChebFMM_CreateTree(cheb_deg, kernel_fn.ker_dim[0], fn_input, trg_coord,
-                           comm, 1e-4, max_pts, pvfmm::FreeSpace);
+
+    pvfmm::ChebFMM_Tree<double> tree(comm);
+    { // Initialize tree
+        pvfmm::ChebFMM_Data<double> tree_data;
+        tree_data.cheb_deg = cheb_deg;
+        tree_data.data_dof = kernel_fn.ker_dim[0];
+        tree_data.input_fn = fn_input;
+        tree_data.tol = 1e-10;
+        bool adap = false;
+
+        tree_data.dim = PVFMM_COORD_DIM;
+        tree_data.max_depth = PVFMM_MAX_DEPTH;
+        tree_data.max_pts = max_pts;
+
+        // Set refinement point coordinates.
+        tree_data.pt_coord = point_distrib<double>(UnifGrid, 12800, comm);
+
+        // Set target points.
+        tree_data.trg_coord = trg_coord;
+
+        // Initialize with input data.
+        tree.Initialize(&tree_data);
+        tree.InitFMM_Tree(adap, pvfmm::FreeSpace);
+    }
 
     // Load matrices.
     pvfmm::ChebFMM<double> matrices;
-    matrices.Initialize(mult_order, cheb_deg, MPI_COMM_WORLD, &kernel_fn);
+    matrices.Initialize(mult_order, cheb_deg, comm, &kernel_fn);
 
     // FMM Setup
-    tree->SetupFMM(&matrices);
+    tree.SetupFMM(&matrices);
 
     // Run FMM
     size_t n_trg = trg_coord.size() / PVFMM_COORD_DIM;
     std::vector<double> trg_value(n_trg);
-    pvfmm::ChebFMM_Evaluate(tree, trg_value, n_trg);
-    delete tree;
-    return trg_value[0] * 4 * PI314 * scale*scale;
+    pvfmm::ChebFMM_Evaluate(&tree, trg_value, n_trg);
+    // std::cout << pvfmm::Vector<double>(trg_value) << '\n'; // print output
+    for (auto &v : trg_value) {
+        v *= 4 * PI314 * scale * scale;
+    }
+    return trg_value;
 }
 
 using EVec3 = Eigen::Vector3d;
@@ -141,7 +268,18 @@ inline double gKernel(const EVec3 &target, const EVec3 &source) {
 // Out of Direct Sum Layer, far field part
 inline double gKernelFF(const EVec3 &target, const EVec3 &source) {
     double fEwald = gKernelEwald(target, source);
-    const int N = DIRECTLAYER;
+    // double fEwald=0;
+    // int N = 2*DIRECTLAYER;
+    // for (int i = -N; i < N + 1; i++) {
+    //     for (int j = -N; j < N + 1; j++) {
+    //         for (int k = -N; k < N + 1; k++) {
+    //             double gFree = gKernel(target, source + EVec3(i, j, k));
+    //             fEwald += gFree;
+    //         }
+    //     }
+    // }
+
+    int N = DIRECTLAYER;
     for (int i = -N; i < N + 1; i++) {
         for (int j = -N; j < N + 1; j++) {
             for (int k = -N; k < N + 1; k++) {
@@ -150,9 +288,6 @@ inline double gKernelFF(const EVec3 &target, const EVec3 &source) {
             }
         }
     }
-
-    // add neutralizing background within DIRECTLAYER
-    fEwald -= integrate(target.data(),-N,N+1);
 
     //   {
     //     std::cout << "source:" << source << std::endl
@@ -218,40 +353,46 @@ int main(int argc, char **argv) {
     Eigen::setNbThreads(1);
     MPI_Init(&argc, &argv);
 
-    {
-        double t[3] = {0.2, 0.3, 0.4};
-        std::cout << integrate(t, -3, 4) << std::endl;
-    }
+    std::cout << std::scientific << std::setprecision(15);
+    // {
+    //     std::vector<double> t = {1.2, 0.3, 0.4, 2.5, 1.2, 0.8};
+    //     const auto &v = integrate(t.data(), 2, -2, 3);
+    //     std::cout << std::scientific << std::setprecision(15) //
+    //               << v[0] << std::endl
+    //               << v[1] << std::endl;
+    //     std::exit(0);
+    // }
 
-    {
-        EVec3 samplePoint(0.72, 0.7, 0.8);
-        EVec3 chargePoint(0.11, 0.2, 0.3);
-        std::cout << gKernelEwald(chargePoint, chargePoint) << std::endl;
-        std::cout << gKernelEwald(chargePoint + EVec3(0.001, 0, 0),
-                                  chargePoint) -
-                         gKernel(chargePoint + EVec3(0.001, 0, 0), chargePoint)
-                  << std::endl;
-        double pot = gKernelEwald(samplePoint, chargePoint);
-        std::cout << pot << std::endl;
-        double pot1 = pot;
-        const int N = 60;
-#pragma omp parallel for
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                for (int k = 0; k < N; k++) {
-                    EVec3 negPoint(i, j, k);
-                    negPoint *= (1.0 / N);
-                    double p = gKernelEwald(samplePoint, negPoint) *
-                               (-1.0 / pow(N, 3));
-#pragma omp atomic
-                    pot += p;
-                }
-            }
-        }
-        std::cout << pot << std::endl;
-        std::cout << pot - pot1 << std::endl;
-        // std::exit(0);
-    }
+    //     {
+    //         EVec3 samplePoint(0.72, 0.7, 0.8);
+    //         EVec3 chargePoint(0.11, 0.2, 0.3);
+    //         std::cout << gKernelEwald(chargePoint, chargePoint) << std::endl;
+    //         std::cout << gKernelEwald(chargePoint + EVec3(0.001, 0, 0),
+    //                                   chargePoint) -
+    //                          gKernel(chargePoint + EVec3(0.001, 0, 0),
+    //                          chargePoint)
+    //                   << std::endl;
+    //         double pot = gKernelEwald(samplePoint, chargePoint);
+    //         std::cout << pot << std::endl;
+    //         double pot1 = pot;
+    //         const int N = 60;
+    // #pragma omp parallel for
+    //         for (int i = 0; i < N; i++) {
+    //             for (int j = 0; j < N; j++) {
+    //                 for (int k = 0; k < N; k++) {
+    //                     EVec3 negPoint(i, j, k);
+    //                     negPoint *= (1.0 / N);
+    //                     double p = gKernelEwald(samplePoint, negPoint) *
+    //                                (-1.0 / pow(N, 3));
+    // #pragma omp atomic
+    //                     pot += p;
+    //                 }
+    //             }
+    //         }
+    //         std::cout << pot << std::endl;
+    //         std::cout << pot - pot1 << std::endl;
+    //         // std::exit(0);
+    //     }
 
     std::chrono::high_resolution_clock::time_point t1 =
         std::chrono::high_resolution_clock::now();
@@ -285,6 +426,17 @@ int main(int argc, char **argv) {
         pCheck, (double *)&(pCenterLEquiv[0]), scaleLEquiv,
         0); // center at 0.5,0.5,0.5, periodic box 1,1,1, scale 1.05, depth = 0
 
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+        chargePoint(2);
+    std::vector<double> chargeValue(2);
+    chargePoint[0] = Eigen::Vector3d(0.61, 0.345, 0.767);
+    chargeValue[0] = -1.0;
+    chargePoint[1] = Eigen::Vector3d(0.1, 0.1, 0.1);
+    chargeValue[1] = 1.0;
+
+    chargeValue.resize(2);
+    chargePoint.resize(2);
+
     // calculate the operator M2L with least square
     const int equivN = pointMEquiv.size() / 3;
     const int checkN = pointLCheck.size() / 3;
@@ -305,12 +457,18 @@ int main(int argc, char **argv) {
     Eigen::MatrixXd ApinvVT(A.cols(), A.rows());
     pinv(A, ApinvU, ApinvVT);
 
-// #pragma omp parallel for
-    for (int i = 0; i < equivN; i++) {
+    // neutralizing background
+    const auto &neuPotCpoint =
+        integrate(pointLCheck.data(), checkN, -DIRECTLAYER, DIRECTLAYER + 1);
+    std::cout << "background potential" << std::endl;
+    for (auto &v : neuPotCpoint) {
+        std::cout << v << std::endl;
+    }
+
+    // #pragma omp parallel for
+    for (int i = 0; i < 1; i++) {
         const Eigen::Vector3d Mpoint(pointMEquiv[3 * i], pointMEquiv[3 * i + 1],
                                      pointMEquiv[3 * i + 2]);
-        //		std::cout << "debug:" << Mpoint << std::endl;
-
         // assemble linear system
         Eigen::VectorXd f(checkN);
         for (int k = 0; k < checkN; k++) {
@@ -318,11 +476,16 @@ int main(int argc, char **argv) {
                                    pointLCheck[3 * k + 2]);
             //			std::cout<<"debug:"<<k<<std::endl;
             // sum the images
-            f[k] = gKernelFF(Cpoint, Mpoint);
+            for (int p = 0; p < chargeValue.size(); p++)
+                f[k] += (gKernelFF(Cpoint, chargePoint[p]) + neuPotCpoint[k]) *
+                        chargeValue[p];
+            // f[k] = gKernelFF(Cpoint, Mpoint) - gKernelFF(Cpoint, neupoint);
         }
-        std::cout << "debug:" << f << std::endl;
 
         M2L.col(i) = (ApinvU.transpose() * (ApinvVT.transpose() * f));
+
+        std::cout << "debug: \n" << f << std::endl;
+        std::cout << "debug M: \n" << M2L.col(i) << std::endl;
     }
     std::chrono::high_resolution_clock::time_point t2 =
         std::chrono::high_resolution_clock::now();
@@ -338,113 +501,84 @@ int main(int argc, char **argv) {
     //     }
     // }
 
-    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
-        chargePoint(2);
-    std::vector<double> chargeValue(2);
-    chargePoint[0] = Eigen::Vector3d(0.6, 0.6, 0.6);
-    chargeValue[0] = -1;
-    chargePoint[1] = Eigen::Vector3d(0.1, 0.1, 0.1);
-    chargeValue[1] = 1.0;
+    // // solve M
+    // A.resize(checkN, equivN);
+    // ApinvU.resize(A.cols(), A.rows());
+    // ApinvVT.resize(A.cols(), A.rows());
+    // Eigen::VectorXd f(checkN);
+    // for (int k = 0; k < checkN; k++) {
+    //     double temp = 0;
+    //     Eigen::Vector3d Cpoint(pointMCheck[3 * k], pointMCheck[3 * k + 1],
+    //                            pointMCheck[3 * k + 2]);
+    //     for (size_t p = 0; p < chargePoint.size(); p++) {
+    //         temp = temp + gKernel(Cpoint, chargePoint[p]) * (chargeValue[p]);
+    //     }
+    //     f(k) = temp;
+    //     for (int l = 0; l < equivN; l++) {
+    //         Eigen::Vector3d Mpoint(pointMEquiv[3 * l], pointMEquiv[3 * l +
+    //         1],
+    //                                pointMEquiv[3 * l + 2]);
+    //         A(k, l) = gKernel(Mpoint, Cpoint);
+    //     }
+    // }
+    // pinv(A, ApinvU, ApinvVT);
+    // Eigen::VectorXd Msource = (ApinvU.transpose() * (ApinvVT.transpose() *
+    // f));
 
-    // solve M
-    A.resize(checkN, equivN);
-    ApinvU.resize(A.cols(), A.rows());
-    ApinvVT.resize(A.cols(), A.rows());
-    Eigen::VectorXd f(checkN);
-    for (int k = 0; k < checkN; k++) {
-        double temp = 0;
-        Eigen::Vector3d Cpoint(pointMCheck[3 * k], pointMCheck[3 * k + 1],
-                               pointMCheck[3 * k + 2]);
-        for (size_t p = 0; p < chargePoint.size(); p++) {
-            temp = temp + gKernel(Cpoint, chargePoint[p]) * (chargeValue[p]);
-        }
-        f(k) = temp;
-        for (int l = 0; l < equivN; l++) {
-            Eigen::Vector3d Mpoint(pointMEquiv[3 * l], pointMEquiv[3 * l + 1],
-                                   pointMEquiv[3 * l + 2]);
-            A(k, l) = gKernel(Mpoint, Cpoint);
-        }
-    }
-    pinv(A, ApinvU, ApinvVT);
-    Eigen::VectorXd Msource = (ApinvU.transpose() * (ApinvVT.transpose() * f));
-
+    Eigen::VectorXd Msource = M2L.col(0);
     std::cout << "Msource sum: " << Msource.sum() << std::endl;
 
-    Eigen::VectorXd M2Lsource = M2L * (Msource);
+    Eigen::VectorXd M2Lsource = (Msource);
 
-    Eigen::Vector3d samplePoint = chargePoint[0];
-    double Usample = 0;
-    double UsampleSP = 0;
-    double EwaldFF = 0;
-    for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
-        for (int j = -DIRECTLAYER; j < 1 + DIRECTLAYER; j++) {
-            for (int k = -DIRECTLAYER; k < 1 + DIRECTLAYER; k++) {
-                for (size_t p = 0; p < chargePoint.size(); p++) {
-                    Usample +=
-                        gKernel(samplePoint, chargePoint[p] + EVec3(i, j, k)) *
-                        chargeValue[p];
+    {
+        // verify. Three components:
+        // 1. direct near field
+        // 2. background near field
+        // 3. far field
+
+        Eigen::Vector3d samplePoint = chargePoint[0];
+        double UsampleNF = 0;
+        double UsampleBGNF = 0;
+        double UsampleFF = 0;
+        double EwaldFF = 0;
+        double Ewald = 0;
+
+        for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
+            for (int j = -DIRECTLAYER; j < 1 + DIRECTLAYER; j++) {
+                for (int k = -DIRECTLAYER; k < 1 + DIRECTLAYER; k++) {
+                    for (size_t p = 0; p < chargePoint.size(); p++) {
+                        UsampleNF += gKernel(samplePoint,
+                                             chargePoint[p] + EVec3(i, j, k)) *
+                                     chargeValue[p];
+                    }
                 }
             }
         }
-    }
 
-    for (size_t p = 0; p < chargePoint.size(); p++) {
-        EwaldFF += gKernelFF(samplePoint, chargePoint[p]) * chargeValue[p];
-    }
-    for (int p = 0; p < equivN; p++) {
-        Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1],
-                               pointLEquiv[3 * p + 2]);
-        UsampleSP += gKernel(samplePoint, Lpoint) * M2Lsource[p];
-    }
-
-    std::cout << "samplePoint:" << samplePoint.transpose() << std::endl;
-    std::cout << "Usample NF:" << Usample << std::endl;
-    std::cout << "Usample FF:" << UsampleSP << std::endl;
-    std::cout << "Ewald FF:" << EwaldFF << std::endl;
-    std::cout << "Usample FF+NF total:" << UsampleSP + Usample << std::endl;
-    const double p0 =
-        gKernelEwald(samplePoint, chargePoint[0]) * chargeValue[0] +
-        gKernelEwald(samplePoint, chargePoint[1]) * chargeValue[1];
-    std::cout << "Ewald " << p0 << std::endl;
-
-    samplePoint = chargePoint[0] - EVec3(0.001, 0.001, 0.001);
-    Usample = 0;
-    UsampleSP = 0;
-    EwaldFF = 0;
-
-    for (int i = -DIRECTLAYER; i < 1 + DIRECTLAYER; i++) {
-        for (int j = -DIRECTLAYER; j < 1 + DIRECTLAYER; j++) {
-            for (int k = -DIRECTLAYER; k < 1 + DIRECTLAYER; k++) {
-                for (size_t p = 0; p < chargePoint.size(); p++) {
-                    Usample +=
-                        gKernel(samplePoint, chargePoint[p] + EVec3(i, j, k)) *
-                        chargeValue[p];
-                }
-            }
+        for (int p = 0; p < equivN; p++) {
+            Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1],
+                                   pointLEquiv[3 * p + 2]);
+            UsampleFF += gKernel(samplePoint, Lpoint) * M2Lsource[p];
         }
+
+        const auto &val =
+            integrate(samplePoint.data(), 1, -DIRECTLAYER, DIRECTLAYER + 1);
+
+        for (size_t p = 0; p < chargePoint.size(); p++) {
+            EwaldFF += gKernelFF(samplePoint, chargePoint[p]) * chargeValue[p];
+            Ewald += gKernelEwald(samplePoint, chargePoint[p]) * chargeValue[p];
+            UsampleBGNF += val[0] * chargeValue[p];
+        }
+
+        std::cout << "samplePoint:" << samplePoint.transpose() << std::endl;
+        std::cout << "Usample NF:" << UsampleNF << std::endl;
+        std::cout << "Usample BGNF:" << UsampleBGNF << std::endl;
+        std::cout << "Usample FF:" << UsampleFF << std::endl;
+        std::cout << "EwaldFF:" << EwaldFF << std::endl;
+        std::cout << "FF Error: " << EwaldFF - (UsampleFF + UsampleBGNF)
+                  << std::endl;
     }
 
-    for (size_t p = 0; p < chargePoint.size(); p++) {
-        EwaldFF += gKernelFF(samplePoint, chargePoint[p]) * chargeValue[p];
-    }
-    for (int p = 0; p < equivN; p++) {
-        Eigen::Vector3d Lpoint(pointLEquiv[3 * p], pointLEquiv[3 * p + 1],
-                               pointLEquiv[3 * p + 2]);
-        UsampleSP += gKernel(samplePoint, Lpoint) * M2Lsource[p];
-    }
-
-    std::cout << "samplePoint:" << samplePoint.transpose() << std::endl;
-    std::cout << "Usample NF:" << Usample << std::endl;
-    std::cout << "Usample FF:" << UsampleSP << std::endl;
-    std::cout << "Ewald FF:" << EwaldFF << std::endl;
-    std::cout << "Usample FF+NF total:" << UsampleSP + Usample << std::endl;
-    const double p1 =
-        gKernelEwald(samplePoint, chargePoint[0]) * chargeValue[0] +
-        gKernelEwald(samplePoint, chargePoint[1]) * chargeValue[1] -
-        gKernel(samplePoint, chargePoint[0]) * chargeValue[0];
-    std::cout << "Ewald " << p1 << std::endl;
-    std::cout << "Error : " << std::setprecision(16) << p0 + p1 << std::endl;
-    std::cout << "Error : " << std::setprecision(16) << p0 - p1 << std::endl;
     MPI_Finalize();
     return 0;
 }
