@@ -1,3 +1,5 @@
+This project still works but has been replaced by STKFMM (https://github.com/wenyan4work/STKFMM)
+
 # PeriodicFMM
 The C++/C/Fortran/Python wrapper for flexibly periodic FMM and operator data generator to be used with PVFMM.
 
